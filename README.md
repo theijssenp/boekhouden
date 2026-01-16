@@ -12,3 +12,17 @@ Applicatie om administratie in te voeren
 - add.php: Nieuwe transactie toevoegen
 - edit.php: Transactie bewerken
 - delete.php: Transactie verwijderen
+
+
+## Voorbeeld
+ - Onderstaande schermafbeeldingen geven een voorbeeld hoe de app werkt.
+ - De voorbeelden zijn gebaseerd op Fake data.
+
+![Alt-tekst](transactions.png)
+
+![Alt-tekst](kostenbaten.png)
+
+![Alt-tekst](Balans.png)
+
+![Alt-tekst](btw.png)
+
