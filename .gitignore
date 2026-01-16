@@ -28,5 +28,6 @@ logs/
 *.tmp
 *.temp
 
+AGENTS.md
 
-Administratie.xlsx
+dump.sql

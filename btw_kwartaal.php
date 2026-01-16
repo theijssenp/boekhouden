@@ -1,0 +1,551 @@
+<?php
+require 'config.php';
+
+// Determine year and quarter
+$year = isset($_GET['year']) ? (int)$_GET['year'] : date('Y');
+$quarter = isset($_GET['quarter']) ? (int)$_GET['quarter'] : ceil(date('n') / 3);
+
+// Calculate quarter dates
+$quarterMonths = [
+    1 => ['start' => "$year-01-01", 'end' => "$year-03-31", 'name' => "Eerste kwartaal ($year)"],
+    2 => ['start' => "$year-04-01", 'end' => "$year-06-30", 'name' => "Tweede kwartaal ($year)"],
+    3 => ['start' => "$year-07-01", 'end' => "$year-09-30", 'name' => "Derde kwartaal ($year)"],
+    4 => ['start' => "$year-10-01", 'end' => "$year-12-31", 'name' => "Vierde kwartaal ($year)"]
+];
+
+$startDate = $quarterMonths[$quarter]['start'];
+$endDate = $quarterMonths[$quarter]['end'];
+$quarterName = $quarterMonths[$quarter]['name'];
+
+// Check if VAT columns exist in the database
+$vatColumnsExist = false;
+try {
+    $stmt = $pdo->query("SHOW COLUMNS FROM transactions LIKE 'vat_percentage'");
+    $vatColumnsExist = $stmt->rowCount() > 0;
+} catch (Exception $e) {
+    $vatColumnsExist = false;
+}
+
+// Check if vat_rates table exists
+$vatRatesTableExists = false;
+try {
+    $stmt = $pdo->query("SHOW TABLES LIKE 'vat_rates'");
+    $vatRatesTableExists = $stmt->rowCount() > 0;
+} catch (Exception $e) {
+    $vatRatesTableExists = false;
+}
+
+// Function to get VAT rate name for a specific date and percentage
+function get_vat_rate_name($pdo, $date, $percentage) {
+    try {
+        $stmt = $pdo->prepare("
+            SELECT name
+            FROM vat_rates
+            WHERE is_active = TRUE
+              AND rate = ?
+              AND effective_from <= ?
+              AND (effective_to IS NULL OR effective_to >= ?)
+            ORDER BY effective_from DESC
+            LIMIT 1
+        ");
+        $stmt->execute([$percentage, $date, $date]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result && !empty($result['name'])) {
+            return $result['name'];
+        }
+    } catch (Exception $e) {
+        // If table doesn't exist or error, fall back to generic name
+    }
+    
+    // Fallback names based on percentage
+    if ($percentage == 21) return 'Hoog tarief';
+    if ($percentage == 9) return 'Verlaagd tarief';
+    if ($percentage == 0) return 'Vrijgesteld';
+    return $percentage . '%';
+}
+
+// Get transactions for the quarter
+if ($vatColumnsExist) {
+    // With VAT columns
+    if ($vatRatesTableExists) {
+        // Include VAT rate name from vat_rates table
+        $stmt = $pdo->prepare("
+            SELECT
+                t.*,
+                c.name as category,
+                -- Calculate VAT amounts
+                CASE
+                    WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                        t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
+                    WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
+                        t.amount * (t.vat_percentage / 100)
+                    ELSE 0
+                END as vat_amount,
+                -- Calculate base amount
+                CASE
+                    WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                        t.amount / (1 + (t.vat_percentage / 100))
+                    ELSE t.amount
+                END as base_amount,
+                -- Get VAT rate name
+                COALESCE(
+                    (SELECT vr.name
+                     FROM vat_rates vr
+                     WHERE vr.is_active = TRUE
+                       AND vr.rate = t.vat_percentage
+                       AND vr.effective_from <= t.date
+                       AND (vr.effective_to IS NULL OR vr.effective_to >= t.date)
+                     ORDER BY vr.effective_from DESC
+                     LIMIT 1),
+                    CASE
+                        WHEN t.vat_percentage = 21 THEN 'Hoog tarief'
+                        WHEN t.vat_percentage = 9 THEN 'Verlaagd tarief'
+                        WHEN t.vat_percentage = 0 THEN 'Vrijgesteld'
+                        ELSE CONCAT(t.vat_percentage, '%')
+                    END
+                ) as vat_rate_name
+            FROM transactions t
+            LEFT JOIN categories c ON t.category_id = c.id
+            WHERE t.date BETWEEN ? AND ?
+            ORDER BY t.date
+        ");
+    } else {
+        // Without vat_rates table
+        $stmt = $pdo->prepare("
+            SELECT
+                t.*,
+                c.name as category,
+                -- Calculate VAT amounts
+                CASE
+                    WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                        t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
+                    WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
+                        t.amount * (t.vat_percentage / 100)
+                    ELSE 0
+                END as vat_amount,
+                -- Calculate base amount
+                CASE
+                    WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                        t.amount / (1 + (t.vat_percentage / 100))
+                    ELSE t.amount
+                END as base_amount,
+                CONCAT(t.vat_percentage, '%') as vat_rate_name
+            FROM transactions t
+            LEFT JOIN categories c ON t.category_id = c.id
+            WHERE t.date BETWEEN ? AND ?
+            ORDER BY t.date
+        ");
+    }
+} else {
+    // Without VAT columns (simplified)
+    $stmt = $pdo->prepare("
+        SELECT t.*, c.name as category
+        FROM transactions t
+        LEFT JOIN categories c ON t.category_id = c.id
+        WHERE t.date BETWEEN ? AND ?
+        ORDER BY t.date
+    ");
+}
+$stmt->execute([$startDate, $endDate]);
+$transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Calculate VAT summary
+$vatSummary = [
+    'total_income' => 0,
+    'total_expenses' => 0,
+    'vat_on_income' => 0,
+    'vat_on_expenses' => 0,
+    'net_vat' => 0
+];
+
+foreach ($transactions as $t) {
+    if ($t['type'] == 'inkomst') {
+        $vatSummary['total_income'] += $t['amount'];
+        if ($vatColumnsExist && isset($t['vat_amount'])) {
+            $vatSummary['vat_on_income'] += $t['vat_amount'];
+        }
+    } else {
+        $vatSummary['total_expenses'] += $t['amount'];
+        if ($vatColumnsExist && isset($t['vat_amount']) && isset($t['vat_deductible']) && $t['vat_deductible']) {
+            $vatSummary['vat_on_expenses'] += $t['vat_amount'];
+        }
+    }
+}
+
+$vatSummary['net_vat'] = $vatSummary['vat_on_income'] - $vatSummary['vat_on_expenses'];
+
+// Group by VAT rate if available
+$vatByRate = [];
+if ($vatColumnsExist) {
+    if ($vatRatesTableExists) {
+        // With historical VAT rates - get rate name for each transaction
+        $stmt = $pdo->prepare("
+            SELECT
+                t.vat_percentage,
+                COALESCE(
+                    (SELECT vr.name
+                     FROM vat_rates vr
+                     WHERE vr.is_active = TRUE
+                       AND vr.rate = t.vat_percentage
+                       AND vr.effective_from <= t.date
+                       AND (vr.effective_to IS NULL OR vr.effective_to >= t.date)
+                     ORDER BY vr.effective_from DESC
+                     LIMIT 1),
+                    CASE
+                        WHEN t.vat_percentage = 21 THEN 'Hoog tarief'
+                        WHEN t.vat_percentage = 9 THEN 'Verlaagd tarief'
+                        WHEN t.vat_percentage = 0 THEN 'Vrijgesteld'
+                        ELSE CONCAT(t.vat_percentage, '%')
+                    END
+                ) as vat_rate_name,
+                t.type,
+                SUM(t.amount) as total_amount,
+                COUNT(*) as count
+            FROM transactions t
+            WHERE t.date BETWEEN ? AND ? AND t.vat_percentage > 0
+            GROUP BY t.vat_percentage, vat_rate_name, t.type
+            ORDER BY t.vat_percentage DESC, t.type
+        ");
+    } else {
+        // Without vat_rates table - simple grouping by percentage
+        $stmt = $pdo->prepare("
+            SELECT
+                vat_percentage,
+                CONCAT(vat_percentage, '%') as vat_rate_name,
+                type,
+                SUM(amount) as total_amount,
+                COUNT(*) as count
+            FROM transactions
+            WHERE date BETWEEN ? AND ? AND vat_percentage > 0
+            GROUP BY vat_percentage, type
+            ORDER BY vat_percentage DESC, type
+        ");
+    }
+    $stmt->execute([$startDate, $endDate]);
+    $vatByRate = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+?>
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTW per Kwartaal - Boekhouden</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>BTW Overzicht per Kwartaal</h1>
+        <p>BTW-berekeningen en aangifte per kwartaal</p>
+    </div>
+
+    <nav class="nav-bar">
+        <ul class="nav-links">
+            <li><a href="index.php">Transacties</a></li>
+            <li><a href="add.php">Nieuwe Transactie</a></li>
+            <li><a href="profit_loss.php">Kosten Baten</a></li>
+            <li><a href="btw_kwartaal.php" class="active">BTW Kwartaal</a></li>
+            <li><a href="balans.php">Balans</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <h2 class="section-title"><?php echo $quarterName; ?></h2>
+        <p class="neutral">Periode: <?php echo date('d-m-Y', strtotime($startDate)); ?> t/m <?php echo date('d-m-Y', strtotime($endDate)); ?></p>
+        
+        <?php if (!$vatColumnsExist): ?>
+        <div class="alert alert-warning">
+            <strong>Let op:</strong> De database ondersteunt nog geen BTW-velden. Om BTW te berekenen moet u eerst:
+            <ol style="margin: 10px 0 10px 20px;">
+                <li>De database bijwerken met het nieuwe schema (schema_vat.sql)</li>
+                <li>BTW-gegevens toevoegen aan bestaande transacties</li>
+                <li>Nieuwe transacties met BTW-percentage invoeren</li>
+            </ol>
+            <p>De onderstaande berekeningen zijn gebaseerd op veronderstellingen.</p>
+        </div>
+        <?php endif; ?>
+        
+        <div class="filter-bar">
+            <form method="get" class="filter-form" style="display: flex; gap: 1rem; align-items: center;">
+                <div class="form-group" style="margin: 0;">
+                    <label for="year" style="margin-right: 0.5rem;">Jaar:</label>
+                    <select id="year" name="year" class="form-control form-control-sm">
+                        <?php for ($y = date('Y'); $y >= date('Y') - 5; $y--): ?>
+                            <option value="<?php echo $y; ?>" <?php echo $y == $year ? 'selected' : ''; ?>>
+                                <?php echo $y; ?>
+                            </option>
+                        <?php endfor; ?>
+                    </select>
+                </div>
+                
+                <div class="form-group" style="margin: 0;">
+                    <label for="quarter" style="margin-right: 0.5rem;">Kwartaal:</label>
+                    <select id="quarter" name="quarter" class="form-control form-control-sm">
+                        <option value="1" <?php echo $quarter == 1 ? 'selected' : ''; ?>>Q1 (jan-mrt)</option>
+                        <option value="2" <?php echo $quarter == 2 ? 'selected' : ''; ?>>Q2 (apr-jun)</option>
+                        <option value="3" <?php echo $quarter == 3 ? 'selected' : ''; ?>>Q3 (jul-sep)</option>
+                        <option value="4" <?php echo $quarter == 4 ? 'selected' : ''; ?>>Q4 (okt-dec)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-sm">Toon Kwartaal</button>
+            </form>
+        </div>
+        
+        <div class="card-grid">
+            <div class="card">
+                <h3 class="card-title">Omzet (excl. BTW)</h3>
+                <div class="positive amount">€<?php echo number_format($vatSummary['total_income'], 2); ?></div>
+                <p class="neutral">Totaal inkomsten dit kwartaal</p>
+            </div>
+            
+            <div class="card">
+                <h3 class="card-title">Kosten (excl. BTW)</h3>
+                <div class="negative amount">€<?php echo number_format($vatSummary['total_expenses'], 2); ?></div>
+                <p class="neutral">Totaal uitgaven dit kwartaal</p>
+            </div>
+            
+            <div class="card">
+                <h3 class="card-title">Af te dragen BTW</h3>
+                <div class="<?php echo $vatSummary['vat_on_income'] >= 0 ? 'negative' : 'positive'; ?> amount">
+                    €<?php echo number_format($vatSummary['vat_on_income'], 2); ?>
+                </div>
+                <p class="neutral">
+                    <?php echo $vatSummary['vat_on_income'] >= 0 ? 'BTW over inkomsten' : 'BTW te ontvangen (creditnota\'s)'; ?>
+                </p>
+            </div>
+            
+            <div class="card">
+                <h3 class="card-title">Voorbelasting BTW</h3>
+                <div class="<?php echo $vatSummary['vat_on_expenses'] >= 0 ? 'positive' : 'negative'; ?> amount">
+                    €<?php echo number_format($vatSummary['vat_on_expenses'], 2); ?>
+                </div>
+                <p class="neutral">
+                    <?php echo $vatSummary['vat_on_expenses'] >= 0 ? 'BTW over aftrekbare kosten' : 'BTW terug te betalen (credits)'; ?>
+                </p>
+            </div>
+            
+            <div class="card" style="grid-column: span 2; background: linear-gradient(135deg, #2c3e50, #3498db); color: white;">
+                <h3 class="card-title" style="color: white;">Netto BTW verschuldigd</h3>
+                <div class="amount" style="font-size: 2.5rem; color: white;">
+                    €<?php echo number_format($vatSummary['net_vat'], 2); ?>
+                </div>
+                <p style="font-size: 1.2rem; margin-top: 10px;">
+                    <?php if ($vatSummary['net_vat'] > 0): ?>
+                    <strong>Te betalen aan de Belastingdienst</strong>
+                    <?php elseif ($vatSummary['net_vat'] < 0): ?>
+                    <strong>Terug te ontvangen van de Belastingdienst</strong>
+                    <?php else: ?>
+                    <strong>Geen BTW verschuldigd</strong>
+                    <?php endif; ?>
+                </p>
+            </div>
+        </div>
+        
+        <?php if ($vatColumnsExist && !empty($vatByRate)): ?>
+        <div class="card">
+            <h3 class="card-title">BTW per Tarief</h3>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>BTW Tarief</th>
+                            <th>Type</th>
+                            <th>Aantal transacties</th>
+                            <th>Totaal bedrag (incl. BTW)</th>
+                            <th>BTW bedrag</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($vatByRate as $row): ?>
+                        <tr class="vat-rate-<?php echo (int)$row['vat_percentage']; ?>">
+                            <td>
+                                <strong><?php echo $row['vat_percentage']; ?>%</strong>
+                                <?php if (isset($row['vat_rate_name']) && $row['vat_rate_name'] != $row['vat_percentage'] . '%'): ?>
+                                <br><small class="neutral"><?php echo htmlspecialchars($row['vat_rate_name']); ?></small>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <span class="<?php
+                                    if ($row['type'] == 'inkomst') {
+                                        echo $row['total_amount'] >= 0 ? 'positive' : 'negative';
+                                    } else {
+                                        echo $row['total_amount'] >= 0 ? 'negative' : 'positive';
+                                    }
+                                ?>">
+                                    <?php
+                                    // Show special label for credit notes
+                                    if ($row['type'] == 'inkomst' && $row['total_amount'] < 0) {
+                                        echo 'Creditnota (Inkomst)';
+                                    } elseif ($row['type'] == 'uitgave' && $row['total_amount'] < 0) {
+                                        echo 'Credit (Uitgave)';
+                                    } else {
+                                        echo ucfirst($row['type']);
+                                    }
+                                    ?>
+                                </span>
+                            </td>
+                            <td><?php echo $row['count']; ?></td>
+                            <td>€<?php echo number_format($row['total_amount'], 2); ?></td>
+                            <td>
+                                <?php
+                                $vatAmount = $row['total_amount'] * ($row['vat_percentage'] / 100);
+                                echo '€' . number_format($vatAmount, 2);
+                                ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php endif; ?>
+        
+        <div class="card">
+            <h3 class="card-title">Transacties in dit kwartaal</h3>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Omschrijving</th>
+                            <th>Bedrag</th>
+                            <th>Type</th>
+                            <th>Categorie</th>
+                            <?php if ($vatColumnsExist): ?>
+                            <th>BTW %</th>
+                            <th>BTW bedrag</th>
+                            <?php endif; ?>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($transactions)): ?>
+                        <tr>
+                            <td colspan="<?php echo $vatColumnsExist ? 7 : 5; ?>" style="text-align: center; padding: 2rem;">
+                                <div class="alert alert-info">
+                                    Geen transacties gevonden in dit kwartaal.
+                                </div>
+                            </td>
+                        </tr>
+                        <?php else: ?>
+                        <?php foreach ($transactions as $t): ?>
+                        <tr>
+                            <td><?php echo date('d-m-Y', strtotime($t['date'])); ?></td>
+                            <td><?php echo htmlspecialchars($t['description']); ?></td>
+                            <td class="<?php
+                                if ($t['type'] == 'inkomst') {
+                                    echo $t['amount'] >= 0 ? 'positive' : 'negative';
+                                } else {
+                                    echo $t['amount'] >= 0 ? 'negative' : 'positive';
+                                }
+                            ?>">
+                                €<?php echo number_format($t['amount'], 2); ?>
+                            </td>
+                            <td>
+                                <span class="<?php
+                                    if ($t['type'] == 'inkomst') {
+                                        echo $t['amount'] >= 0 ? 'positive' : 'negative';
+                                    } else {
+                                        echo $t['amount'] >= 0 ? 'negative' : 'positive';
+                                    }
+                                ?>">
+                                    <?php
+                                    // Show special label for credit notes
+                                    if ($t['type'] == 'inkomst' && $t['amount'] < 0) {
+                                        echo 'Creditnota (Inkomst)';
+                                    } elseif ($t['type'] == 'uitgave' && $t['amount'] < 0) {
+                                        echo 'Credit (Uitgave)';
+                                    } else {
+                                        echo ucfirst($t['type']);
+                                    }
+                                    ?>
+                                </span>
+                            </td>
+                            <td><?php echo htmlspecialchars($t['category'] ?: 'Geen'); ?></td>
+                            <?php if ($vatColumnsExist): ?>
+                            <td>
+                                <?php
+                                if (isset($t['vat_percentage']) && $t['vat_percentage'] > 0) {
+                                    echo '<strong>' . $t['vat_percentage'] . '%</strong>';
+                                    if (isset($t['vat_rate_name']) && $t['vat_rate_name'] != $t['vat_percentage'] . '%') {
+                                        echo '<br><small class="neutral">' . htmlspecialchars($t['vat_rate_name']) . '</small>';
+                                    }
+                                    if (isset($t['vat_included']) && $t['vat_included']) {
+                                        echo '<br><small>(incl.)</small>';
+                                    }
+                                    if (isset($t['vat_deductible']) && $t['vat_deductible'] && $t['type'] == 'uitgave') {
+                                        echo '<br><small class="positive">[aftrekbaar]</small>';
+                                    }
+                                } else {
+                                    echo '0%';
+                                }
+                                ?>
+                            </td>
+                            <td>
+                                <?php
+                                if (isset($t['vat_amount']) && $t['vat_amount'] != 0) {
+                                    echo '€' . number_format($t['vat_amount'], 2);
+                                } else {
+                                    echo '€0,00';
+                                }
+                                ?>
+                            </td>
+                            <?php endif; ?>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3 class="card-title">BTW Berekeningswijze</h3>
+            <div class="alert alert-info">
+                <p><strong>De BTW-berekening werkt als volgt:</strong></p>
+                <ul>
+                    <li><strong>Af te dragen BTW:</strong> BTW over alle inkomsten (omzet)</li>
+                    <li><strong>Voorbelasting BTW:</strong> BTW over aftrekbare uitgaven (zakelijke kosten)</li>
+                    <li><strong>Netto BTW:</strong> Af te dragen BTW - Voorbelasting BTW</li>
+                </ul>
+                <p><strong>Standaard BTW-tarieven in Nederland:</strong> 0% (vrijgesteld), 9% (verlaagd tarief), 21% (hoog tarief)</p>
+            </div>
+            
+            <div class="alert alert-warning">
+                <p><strong>Belangrijke aantekeningen:</strong></p>
+                <ul>
+                    <li>BTW-aangifte moet uiterlijk de laatste dag van de maand volgend op het kwartaal worden gedaan</li>
+                    <li>Alleen BTW op zakelijke kosten is aftrekbaar (voorbelasting)</li>
+                    <li>BTW op privé-uitgaven is niet aftrekbaar</li>
+                    <li>Controleer altijd of uw berekeningen overeenkomen met uw administratie</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="btn-group">
+            <a href="profit_loss.php?year=<?php echo $year; ?>" class="btn btn-secondary">Kosten Baten Overzicht</a>
+            <a href="balans.php?date=<?php echo $endDate; ?>" class="btn btn-secondary">Balans Overzicht</a>
+            <a href="index.php" class="btn btn-primary">Terug naar Transacties</a>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-submit form when year or quarter changes on mobile
+            const yearSelect = document.getElementById('year');
+            const quarterSelect = document.getElementById('quarter');
+            
+            function checkAndSubmit() {
+                // On mobile, auto-submit for better UX
+                if (window.innerWidth < 768) {
+                    document.querySelector('.filter-form').submit();
+                }
+            }
+            
+            yearSelect.addEventListener('change', checkAndSubmit);
+            quarterSelect.addEventListener('change', checkAndSubmit);
+        });
+    </script>
+</body>
+</html>
