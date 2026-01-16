@@ -175,11 +175,18 @@ foreach ($transactions as $t) {
 
 $vatSummary['net_vat'] = $vatSummary['vat_on_income'] - $vatSummary['vat_on_expenses'];
 
-// Group by VAT rate if available
+// Group by VAT rate if available - IMPROVED VERSION with detailed breakdown
 $vatByRate = [];
+$vatDetailed = [
+    'income_by_rate' => [],
+    'expense_by_rate' => [],
+    'vat_income_by_rate' => [],
+    'vat_expense_by_rate' => []
+];
+
 if ($vatColumnsExist) {
     if ($vatRatesTableExists) {
-        // With historical VAT rates - get rate name for each transaction
+        // With historical VAT rates - get detailed breakdown
         $stmt = $pdo->prepare("
             SELECT
                 t.vat_percentage,
@@ -201,9 +208,27 @@ if ($vatColumnsExist) {
                 ) as vat_rate_name,
                 t.type,
                 SUM(t.amount) as total_amount,
-                COUNT(*) as count
+                COUNT(*) as count,
+                -- Calculate VAT amounts properly
+                SUM(
+                    CASE
+                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                            t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
+                        WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
+                            t.amount * (t.vat_percentage / 100)
+                        ELSE 0
+                    END
+                ) as total_vat_amount,
+                -- Calculate base amount (excl. VAT)
+                SUM(
+                    CASE
+                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                            t.amount / (1 + (t.vat_percentage / 100))
+                        ELSE t.amount
+                    END
+                ) as base_amount
             FROM transactions t
-            WHERE t.date BETWEEN ? AND ? AND t.vat_percentage > 0
+            WHERE t.date BETWEEN ? AND ? AND t.vat_percentage IS NOT NULL
             GROUP BY t.vat_percentage, vat_rate_name, t.type
             ORDER BY t.vat_percentage DESC, t.type
         ");
@@ -215,15 +240,119 @@ if ($vatColumnsExist) {
                 CONCAT(vat_percentage, '%') as vat_rate_name,
                 type,
                 SUM(amount) as total_amount,
-                COUNT(*) as count
+                COUNT(*) as count,
+                -- Calculate VAT amounts properly
+                SUM(
+                    CASE
+                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                            amount - (amount / (1 + (vat_percentage / 100)))
+                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                            amount * (vat_percentage / 100)
+                        ELSE 0
+                    END
+                ) as total_vat_amount,
+                -- Calculate base amount (excl. VAT)
+                SUM(
+                    CASE
+                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                            amount / (1 + (vat_percentage / 100))
+                        ELSE amount
+                    END
+                ) as base_amount
             FROM transactions
-            WHERE date BETWEEN ? AND ? AND vat_percentage > 0
+            WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL
             GROUP BY vat_percentage, type
             ORDER BY vat_percentage DESC, type
         ");
     }
     $stmt->execute([$startDate, $endDate]);
     $vatByRate = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Organize data by rate for detailed breakdown
+    foreach ($vatByRate as $row) {
+        $rate = $row['vat_percentage'];
+        $type = $row['type'];
+        
+        if ($type == 'inkomst') {
+            $vatDetailed['income_by_rate'][$rate] = ($vatDetailed['income_by_rate'][$rate] ?? 0) + $row['total_amount'];
+            $vatDetailed['vat_income_by_rate'][$rate] = ($vatDetailed['vat_income_by_rate'][$rate] ?? 0) + $row['total_vat_amount'];
+        } else {
+            $vatDetailed['expense_by_rate'][$rate] = ($vatDetailed['expense_by_rate'][$rate] ?? 0) + $row['total_amount'];
+            $vatDetailed['vat_expense_by_rate'][$rate] = ($vatDetailed['vat_expense_by_rate'][$rate] ?? 0) + $row['total_vat_amount'];
+        }
+    }
+}
+
+// Get monthly VAT breakdown
+$monthlyVat = [];
+if ($vatColumnsExist) {
+    $stmt = $pdo->prepare("
+        SELECT
+            MONTH(date) as month,
+            YEAR(date) as year,
+            vat_percentage,
+            type,
+            SUM(
+                CASE
+                    WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                        amount - (amount / (1 + (vat_percentage / 100)))
+                    WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                        amount * (vat_percentage / 100)
+                    ELSE 0
+                END
+            ) as vat_amount,
+            SUM(amount) as total_amount,
+            COUNT(*) as count
+        FROM transactions
+        WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL
+        GROUP BY MONTH(date), YEAR(date), vat_percentage, type
+        ORDER BY MONTH(date), vat_percentage DESC, type
+    ");
+    $stmt->execute([$startDate, $endDate]);
+    $monthlyVat = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Get monthly summary
+$monthlySummary = [];
+if ($vatColumnsExist) {
+    $stmt = $pdo->prepare("
+        SELECT
+            MONTH(date) as month,
+            YEAR(date) as year,
+            SUM(CASE WHEN type = 'inkomst' THEN
+                CASE
+                    WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                        amount - (amount / (1 + (vat_percentage / 100)))
+                    WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                        amount * (vat_percentage / 100)
+                    ELSE 0
+                END
+                ELSE 0 END) as vat_income,
+            SUM(CASE WHEN type = 'uitgave' AND vat_deductible = TRUE THEN
+                CASE
+                    WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                        amount - (amount / (1 + (vat_percentage / 100)))
+                    WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                        amount * (vat_percentage / 100)
+                    ELSE 0
+                END
+                ELSE 0 END) as vat_expense_deductible,
+            SUM(CASE WHEN type = 'uitgave' AND (vat_deductible = FALSE OR vat_deductible IS NULL) THEN
+                CASE
+                    WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                        amount - (amount / (1 + (vat_percentage / 100)))
+                    WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                        amount * (vat_percentage / 100)
+                    ELSE 0
+                END
+                ELSE 0 END) as vat_expense_nondeductible
+        FROM transactions
+        WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL
+        GROUP BY MONTH(date), YEAR(date)
+        ORDER BY MONTH(date)
+    ");
+    $stmt->execute([$startDate, $endDate]);
+    $monthlySummary = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 ?>
 <!DOCTYPE html>
@@ -345,7 +474,9 @@ if ($vatColumnsExist) {
         
         <?php if ($vatColumnsExist && !empty($vatByRate)): ?>
         <div class="card">
-            <h3 class="card-title">BTW per Tarief</h3>
+            <h3 class="card-title">BTW per Tarief - Gedetailleerd Overzicht</h3>
+            
+            <!-- Detailed VAT Rate Breakdown -->
             <div class="table-container">
                 <table class="data-table">
                     <thead>
@@ -354,6 +485,7 @@ if ($vatColumnsExist) {
                             <th>Type</th>
                             <th>Aantal transacties</th>
                             <th>Totaal bedrag (incl. BTW)</th>
+                            <th>Bedrag excl. BTW</th>
                             <th>BTW bedrag</th>
                         </tr>
                     </thead>
@@ -388,16 +520,215 @@ if ($vatColumnsExist) {
                             </td>
                             <td><?php echo $row['count']; ?></td>
                             <td>€<?php echo number_format($row['total_amount'], 2); ?></td>
+                            <td>€<?php echo isset($row['base_amount']) ? number_format($row['base_amount'], 2) : number_format($row['total_amount'] / (1 + ($row['vat_percentage']/100)), 2); ?></td>
                             <td>
-                                <?php
-                                $vatAmount = $row['total_amount'] * ($row['vat_percentage'] / 100);
-                                echo '€' . number_format($vatAmount, 2);
-                                ?>
+                                €<?php echo isset($row['total_vat_amount']) ? number_format($row['total_vat_amount'], 2) : number_format($row['total_amount'] * ($row['vat_percentage'] / 100), 2); ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+            </div>
+            
+            <!-- Summary by VAT Rate -->
+            <div style="margin-top: 2rem;">
+                <h4>Totaal Bedragen per BTW Tarief</h4>
+                <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                    <?php
+                    // Get unique VAT rates
+                    $uniqueRates = [];
+                    foreach ($vatByRate as $row) {
+                        $rate = $row['vat_percentage'];
+                        if (!in_array($rate, $uniqueRates)) {
+                            $uniqueRates[] = $rate;
+                        }
+                    }
+                    sort($uniqueRates);
+                    
+                    foreach ($uniqueRates as $rate):
+                        $incomeTotal = $vatDetailed['income_by_rate'][$rate] ?? 0;
+                        $expenseTotal = $vatDetailed['expense_by_rate'][$rate] ?? 0;
+                        $vatIncome = $vatDetailed['vat_income_by_rate'][$rate] ?? 0;
+                        $vatExpense = $vatDetailed['vat_expense_by_rate'][$rate] ?? 0;
+                    ?>
+                    <div class="card" style="background: #f8f9fa;">
+                        <h5 class="card-title"><?php echo $rate; ?>% Tarief</h5>
+                        <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                            <div>
+                                <small class="neutral">Inkomsten:</small>
+                                <div class="positive">€<?php echo number_format($incomeTotal, 2); ?></div>
+                            </div>
+                            <div>
+                                <small class="neutral">Uitgaven:</small>
+                                <div class="negative">€<?php echo number_format($expenseTotal, 2); ?></div>
+                            </div>
+                            <div>
+                                <small class="neutral">BTW inkomsten:</small>
+                                <div>€<?php echo number_format($vatIncome, 2); ?></div>
+                            </div>
+                            <div>
+                                <small class="neutral">BTW uitgaven:</small>
+                                <div>€<?php echo number_format($vatExpense, 2); ?></div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+        
+        <!-- Monthly VAT Insight -->
+        <?php if ($vatColumnsExist && !empty($monthlySummary)): ?>
+        <div class="card">
+            <h3 class="card-title">BTW Overzicht per Maand</h3>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Maand</th>
+                            <th>BTW over Inkomsten</th>
+                            <th>BTW over Aftrekbare Kosten</th>
+                            <th>BTW over Niet-aftrekbare Kosten</th>
+                            <th>Netto BTW per Maand</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $monthNames = [
+                            1 => 'Januari', 2 => 'Februari', 3 => 'Maart', 4 => 'April',
+                            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Augustus',
+                            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'December'
+                        ];
+                        
+                        foreach ($monthlySummary as $monthRow):
+                            $month = (int)$monthRow['month'];
+                            $vatIncome = $monthRow['vat_income'] ?? 0;
+                            $vatExpenseDeductible = $monthRow['vat_expense_deductible'] ?? 0;
+                            $vatExpenseNonDeductible = $monthRow['vat_expense_nondeductible'] ?? 0;
+                            $netVatMonth = $vatIncome - $vatExpenseDeductible;
+                        ?>
+                        <tr>
+                            <td><strong><?php echo $monthNames[$month] ?? "Maand $month"; ?></strong></td>
+                            <td class="negative">€<?php echo number_format($vatIncome, 2); ?></td>
+                            <td class="positive">€<?php echo number_format($vatExpenseDeductible, 2); ?></td>
+                            <td class="neutral">€<?php echo number_format($vatExpenseNonDeductible, 2); ?></td>
+                            <td class="<?php echo $netVatMonth >= 0 ? 'negative' : 'positive'; ?>">
+                                <strong>€<?php echo number_format($netVatMonth, 2); ?></strong>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8f9fa; font-weight: bold;">
+                            <td>Totaal Kwartaal:</td>
+                            <td class="negative">€<?php echo number_format($vatSummary['vat_on_income'], 2); ?></td>
+                            <td class="positive">€<?php echo number_format($vatSummary['vat_on_expenses'], 2); ?></td>
+                            <td class="neutral">€<?php
+                                $nonDeductibleTotal = 0;
+                                foreach ($monthlySummary as $monthRow) {
+                                    $nonDeductibleTotal += $monthRow['vat_expense_nondeductible'] ?? 0;
+                                }
+                                echo number_format($nonDeductibleTotal, 2);
+                            ?></td>
+                            <td class="<?php echo $vatSummary['net_vat'] >= 0 ? 'negative' : 'positive'; ?>">
+                                <strong>€<?php echo number_format($vatSummary['net_vat'], 2); ?></strong>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            
+            <!-- Monthly VAT Chart (simplified) -->
+            <div style="margin-top: 2rem;">
+                <h4>BTW Ontwikkeling per Maand</h4>
+                <div style="background: white; border-radius: 8px; padding: 1rem; border: 1px solid #e0e0e0;">
+                    <div style="display: flex; height: 200px; align-items: flex-end; gap: 10px; padding: 0 1rem;">
+                        <?php foreach ($monthlySummary as $monthRow):
+                            $month = (int)$monthRow['month'];
+                            $vatIncome = $monthRow['vat_income'] ?? 0;
+                            $vatExpenseDeductible = $monthRow['vat_expense_deductible'] ?? 0;
+                            $netVatMonth = $vatIncome - $vatExpenseDeductible;
+                            
+                            // Calculate bar heights (max 150px)
+                            $maxValue = max(array_map(function($m) {
+                                return abs($m['vat_income'] ?? 0) + abs($m['vat_expense_deductible'] ?? 0);
+                            }, $monthlySummary));
+                            
+                            if ($maxValue == 0) $maxValue = 1;
+                            
+                            $incomeHeight = ($vatIncome / $maxValue) * 150;
+                            $expenseHeight = ($vatExpenseDeductible / $maxValue) * 150;
+                            $netHeight = (abs($netVatMonth) / $maxValue) * 150;
+                        ?>
+                        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%;">
+                            <div style="display: flex; flex-direction: column; height: 150px; width: 100%; position: relative;">
+                                <!-- BTW over inkomsten (red) -->
+                                <?php if ($vatIncome > 0): ?>
+                                <div style="
+                                    background: #dc3545;
+                                    height: <?php echo $incomeHeight; ?>px;
+                                    width: 30%;
+                                    position: absolute;
+                                    bottom: 0;
+                                    left: 0;
+                                    border-radius: 4px 4px 0 0;
+                                " title="BTW inkomsten: €<?php echo number_format($vatIncome, 2); ?>"></div>
+                                <?php endif; ?>
+                                
+                                <!-- BTW over kosten (green) -->
+                                <?php if ($vatExpenseDeductible > 0): ?>
+                                <div style="
+                                    background: #28a745;
+                                    height: <?php echo $expenseHeight; ?>px;
+                                    width: 30%;
+                                    position: absolute;
+                                    bottom: 0;
+                                    left: 35%;
+                                    border-radius: 4px 4px 0 0;
+                                " title="BTW kosten: €<?php echo number_format($vatExpenseDeductible, 2); ?>"></div>
+                                <?php endif; ?>
+                                
+                                <!-- Netto BTW (blue/orange) -->
+                                <?php if ($netVatMonth != 0): ?>
+                                <div style="
+                                    background: <?php echo $netVatMonth >= 0 ? '#3498db' : '#f39c12'; ?>;
+                                    height: <?php echo $netHeight; ?>px;
+                                    width: 30%;
+                                    position: absolute;
+                                    bottom: 0;
+                                    left: 70%;
+                                    border-radius: 4px 4px 0 0;
+                                " title="Netto BTW: €<?php echo number_format($netVatMonth, 2); ?>"></div>
+                                <?php endif; ?>
+                            </div>
+                            <div style="margin-top: 10px; font-size: 0.8rem; text-align: center;">
+                                <?php echo substr($monthNames[$month] ?? "M$month", 0, 3); ?><br>
+                                <small>€<?php echo number_format($netVatMonth, 0); ?></small>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <div style="display: flex; justify-content: center; gap: 20px; margin-top: 20px;">
+                        <div style="display: flex; align-items: center;">
+                            <div style="width: 15px; height: 15px; background: #dc3545; margin-right: 5px;"></div>
+                            <small>BTW inkomsten</small>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <div style="width: 15px; height: 15px; background: #28a745; margin-right: 5px;"></div>
+                            <small>BTW kosten</small>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <div style="width: 15px; height: 15px; background: #3498db; margin-right: 5px;"></div>
+                            <small>Netto te betalen</small>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <div style="width: 15px; height: 15px; background: #f39c12; margin-right: 5px;"></div>
+                            <small>Netto terug</small>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <?php endif; ?>

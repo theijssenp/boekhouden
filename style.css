@@ -462,3 +462,275 @@ input[type="checkbox"], input[type="radio"] {
 .transaction-form .card {
     margin-bottom: 1.5rem;
 }
+
+/* VAT Visualization Styles */
+.vat-rate-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.vat-rate-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--box-shadow);
+    border-top: 4px solid;
+}
+
+.vat-rate-card.high-rate {
+    border-top-color: #dc3545;
+}
+
+.vat-rate-card.low-rate {
+    border-top-color: #28a745;
+}
+
+.vat-rate-card.zero-rate {
+    border-top-color: #6c757d;
+}
+
+.vat-rate-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.vat-rate-percentage {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.vat-rate-name {
+    font-size: 1rem;
+    color: var(--gray-dark);
+    font-weight: 500;
+}
+
+.vat-rate-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.vat-stat {
+    text-align: center;
+    padding: 0.75rem;
+    background: var(--gray-light);
+    border-radius: 6px;
+}
+
+.vat-stat-label {
+    font-size: 0.85rem;
+    color: var(--gray-dark);
+    margin-bottom: 0.25rem;
+}
+
+.vat-stat-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.vat-stat-income {
+    color: var(--success-color);
+}
+
+.vat-stat-expense {
+    color: var(--danger-color);
+}
+
+.vat-stat-vat {
+    color: var(--secondary-color);
+}
+
+/* Monthly VAT Chart */
+.vat-monthly-chart {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    box-shadow: var(--box-shadow);
+}
+
+.vat-chart-bars {
+    display: flex;
+    height: 200px;
+    align-items: flex-end;
+    gap: 10px;
+    padding: 0 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.vat-chart-bar-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+}
+
+.vat-chart-bar-group {
+    display: flex;
+    flex-direction: column;
+    height: 150px;
+    width: 100%;
+    position: relative;
+}
+
+.vat-chart-bar-income {
+    background: #dc3545;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 30%;
+    border-radius: 4px 4px 0 0;
+}
+
+.vat-chart-bar-expense {
+    background: #28a745;
+    position: absolute;
+    bottom: 0;
+    left: 35%;
+    width: 30%;
+    border-radius: 4px 4px 0 0;
+}
+
+.vat-chart-bar-net {
+    background: #3498db;
+    position: absolute;
+    bottom: 0;
+    left: 70%;
+    width: 30%;
+    border-radius: 4px 4px 0 0;
+}
+
+.vat-chart-bar-net.negative {
+    background: #f39c12;
+}
+
+.vat-chart-month-label {
+    margin-top: 10px;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.vat-chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.vat-chart-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.vat-chart-legend-color {
+    width: 15px;
+    height: 15px;
+    border-radius: 3px;
+}
+
+.vat-chart-legend-color.income {
+    background: #dc3545;
+}
+
+.vat-chart-legend-color.expense {
+    background: #28a745;
+}
+
+.vat-chart-legend-color.net-positive {
+    background: #3498db;
+}
+
+.vat-chart-legend-color.net-negative {
+    background: #f39c12;
+}
+
+/* VAT Summary Cards */
+.vat-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.vat-summary-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.vat-summary-card.income {
+    border-left: 4px solid var(--success-color);
+}
+
+.vat-summary-card.expense {
+    border-left: 4px solid var(--danger-color);
+}
+
+.vat-summary-card.net {
+    border-left: 4px solid var(--secondary-color);
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+}
+
+.vat-summary-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+}
+
+.vat-summary-label {
+    font-size: 0.9rem;
+    color: var(--gray-dark);
+}
+
+/* Responsive VAT styles */
+@media (max-width: 768px) {
+    .vat-rate-breakdown {
+        grid-template-columns: 1fr;
+    }
+    
+    .vat-chart-bars {
+        height: 150px;
+        padding: 0 0.5rem;
+    }
+    
+    .vat-chart-bar-group {
+        height: 100px;
+    }
+    
+    .vat-summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* VAT table specific styles */
+.vat-rate-21 {
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+.vat-rate-9 {
+    background-color: rgba(40, 167, 69, 0.05);
+}
+
+.vat-rate-0 {
+    background-color: rgba(108, 117, 125, 0.05);
+}
+
+.vat-table-total {
+    background-color: var(--gray-light) !important;
+    font-weight: 700;
+}
+
+.vat-table-total td {
+    border-top: 2px solid var(--gray-dark);
+}

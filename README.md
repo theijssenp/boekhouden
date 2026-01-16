@@ -1,5 +1,5 @@
 # boekhouden
-Applicatie om administratie in te voeren
+Open source applicatie om administratie in te voeren.
 
 ## Installatie
 1. Zorg ervoor dat MySQL geïnstalleerd is.
@@ -12,6 +12,8 @@ Applicatie om administratie in te voeren
 - add.php: Nieuwe transactie toevoegen
 - edit.php: Transactie bewerken
 - delete.php: Transactie verwijderen
+
+[Bezoek Boekhouden met Fake data om uit te proberen](https://boekhouden.hodc.nl/)
 
 
 ## Voorbeeld
