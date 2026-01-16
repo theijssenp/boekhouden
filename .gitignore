@@ -1,0 +1,32 @@
+# Exports
+*.exp
+*.imp
+
+# Wallet-bestanden
+cwallet.sso
+ewallet.p12
+
+# TNS-gerelateerd
+tnsnames.ora
+listener.ora
+sqlnet.ora
+
+# IDE specifiek (optioneel)
+.vscode/
+.idea/
+*.iml
+
+# OS-specifiek
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Tijdelijke bestanden
+*.tmp
+*.temp
+
+
+Administratie.xlsx
