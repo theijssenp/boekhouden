@@ -1,5 +1,9 @@
 <?php
 require 'config.php';
+require 'auth_functions.php';
+
+// Require admin access
+require_admin();
 
 // Check if vat_rates table exists
 $vatRatesTableExists = false;
@@ -42,16 +46,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute([$rate, $name, $description, $effective_from, $effective_to, $is_active]);
                     $message = 'BTW tarief succesvol toegevoegd';
                     $messageType = 'success';
+                    
+                    // Log audit action
+                    log_audit_action('vat_rate_add', "Added VAT rate: $name ($rate%)");
                 } else {
                     $id = (int)$_POST['id'];
                     $stmt = $pdo->prepare("
-                        UPDATE vat_rates 
+                        UPDATE vat_rates
                         SET rate = ?, name = ?, description = ?, effective_from = ?, effective_to = ?, is_active = ?
                         WHERE id = ?
                     ");
                     $stmt->execute([$rate, $name, $description, $effective_from, $effective_to, $is_active, $id]);
                     $message = 'BTW tarief succesvol bijgewerkt';
                     $messageType = 'success';
+                    
+                    // Log audit action
+                    log_audit_action('vat_rate_edit', "Updated VAT rate ID: $id");
                 }
             } elseif ($_POST['action'] === 'delete') {
                 $id = (int)$_POST['id'];
@@ -59,6 +69,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$id]);
                 $message = 'BTW tarief succesvol verwijderd';
                 $messageType = 'success';
+                
+                // Log audit action
+                log_audit_action('vat_rate_delete', "Deleted VAT rate ID: $id");
             }
         } catch (Exception $e) {
             $message = 'Fout: ' . $e->getMessage();
@@ -71,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $vatRates = [];
 if ($vatRatesTableExists) {
     $stmt = $pdo->query("
-        SELECT * FROM vat_rates 
+        SELECT * FROM vat_rates
         ORDER BY effective_from DESC, rate DESC
     ");
     $vatRates = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -85,14 +98,26 @@ if (isset($_GET['edit']) && $vatRatesTableExists) {
     $stmt->execute([$id]);
     $editRate = $stmt->fetch(PDO::FETCH_ASSOC);
 }
+
+// Set page title for header
+$page_title = 'BTW Tarieven Beheer';
+$show_nav = true;
 ?>
-<!DOCTYPE html>
-<html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BTW Tarieven Beheer - Boekhouden</title>
-    <link rel="stylesheet" href="style.css">
+<?php include 'header.php'; ?>
+
+<div class="container">
+    <div class="admin-header">
+        <h1><i class="fas fa-chart-line"></i> BTW Tarieven Beheer</h1>
+        <p class="admin-subtitle">Configureer historische BTW-tarieven met ingangsdatums</p>
+        
+        <div class="admin-navigation">
+            <a href="admin_dashboard.php" class="btn btn-secondary btn-sm"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="admin_users.php" class="btn btn-secondary btn-sm"><i class="fas fa-users"></i> Gebruikers</a>
+            <a href="backup_interface.php" class="btn btn-secondary btn-sm"><i class="fas fa-database"></i> Backups</a>
+            <a href="index.php" class="btn btn-secondary btn-sm"><i class="fas fa-home"></i> Transacties</a>
+        </div>
+    </div>
+
     <style>
         .vat-rates-table {
             width: 100%;
@@ -142,6 +167,7 @@ if (isset($_GET['edit']) && $vatRatesTableExists) {
             border-radius: 8px;
             padding: 1.5rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #e9ecef;
         }
         .form-group {
             margin-bottom: 1rem;
@@ -150,6 +176,7 @@ if (isset($_GET['edit']) && $vatRatesTableExists) {
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 500;
+            color: #495057;
         }
         .form-control {
             width: 100%;
@@ -157,6 +184,7 @@ if (isset($_GET['edit']) && $vatRatesTableExists) {
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 1rem;
+            transition: border-color 0.15s ease-in-out;
         }
         .form-control:focus {
             outline: none;
@@ -185,6 +213,7 @@ if (isset($_GET['edit']) && $vatRatesTableExists) {
             text-decoration: none;
             display: inline-block;
             text-align: center;
+            transition: background-color 0.15s ease-in-out;
         }
         .btn-primary {
             background-color: #3498db;
@@ -231,26 +260,57 @@ if (isset($_GET['edit']) && $vatRatesTableExists) {
             color: #0c5460;
             border: 1px solid #bee5eb;
         }
+        .admin-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .admin-subtitle {
+            color: #6c757d;
+            margin-top: 0.5rem;
+        }
+        .admin-navigation {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        .section-title {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+            font-size: 1.25rem;
+        }
+        .neutral {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+        .alert {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+        }
+        .alert-info {
+            color: #0c5460;
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            border: 1px solid #e9ecef;
+        }
+        .card-title {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
     </style>
-</head>
-<body>
-    <div class="header">
-        <h1>BTW Tarieven Beheer</h1>
-        <p>Configureer historische BTW-tarieven met ingangsdatums</p>
-    </div>
 
-    <nav class="nav-bar">
-        <ul class="nav-links">
-            <li><a href="index.php">Transacties</a></li>
-            <li><a href="add.php">Nieuwe Transactie</a></li>
-            <li><a href="profit_loss.php">Kosten Baten</a></li>
-            <li><a href="btw_kwartaal.php">BTW Kwartaal</a></li>
-            <li><a href="balans.php">Balans</a></li>
-            <li><a href="vat_rates_admin.php" class="active">BTW Tarieven</a></li>
-        </ul>
-    </nav>
-
-    <main class="main-content">
         <?php if ($message): ?>
         <div class="message <?php echo $messageType; ?>">
             <?php echo htmlspecialchars($message); ?>
@@ -427,7 +487,7 @@ mysql -u root -p boekhouden < migrate_vat_rates.sql</pre>
         </div>
         
         <?php endif; ?>
-    </main>
+    </div> <!-- Close container div -->
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -469,5 +529,5 @@ mysql -u root -p boekhouden < migrate_vat_rates.sql</pre>
             }
         });
     </script>
-</body>
-</html>
+
+<?php include 'footer.php'; ?>

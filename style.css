@@ -60,6 +60,11 @@ body {
     padding: 1rem;
     margin-bottom: 2rem;
     box-shadow: var(--box-shadow);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
 .nav-links {
@@ -88,6 +93,16 @@ body {
 .nav-links a.active {
     background-color: var(--secondary-color);
     color: white;
+}
+
+.user-info-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    color: white;
+    font-size: 0.9rem;
+    position: relative;
 }
 
 /* Main Content */

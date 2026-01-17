@@ -1,5 +1,6 @@
 <?php
-require 'config.php';
+require 'auth_functions.php';
+require_admin();
 
 $message = '';
 $error = '';
@@ -238,9 +239,14 @@ if (file_exists($backupDir)) {
             <li><a href="profit_loss.php">Kosten Baten</a></li>
             <li><a href="btw_kwartaal.php">BTW Kwartaal</a></li>
             <li><a href="balans.php">Balans</a></li>
-            <li><a href="vat_rates_admin.php">BTW Tarieven</a></li>
+            <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
             <li><a href="backup_interface.php" class="active">Backup</a></li>
+            <li><a href="logout.php" class="logout-link">Uitloggen</a></li>
         </ul>
+        <div class="user-info-nav">
+            <span class="username"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Gebruiker'); ?></span>
+            <span class="badge-admin">Admin</span>
+        </div>
     </nav>
 
     <main class="main-content">
@@ -344,8 +350,9 @@ if (file_exists($backupDir)) {
             </div>
             
             <div class="btn-group">
-                <a href="index.php" class="btn btn-primary">Terug naar Transacties</a>
-                <a href="vat_rates_admin.php" class="btn btn-secondary">BTW Tarieven Beheer</a>
+                <a href="admin_dashboard.php" class="btn btn-primary">Terug naar Admin Dashboard</a>
+                <a href="index.php" class="btn btn-secondary">Transacties</a>
+                <a href="admin_users.php" class="btn btn-secondary">Gebruikersbeheer</a>
             </div>
         </div>
     </main>

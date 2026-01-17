@@ -6,6 +6,7 @@ Open source applicatie om administratie in te voeren.
 2. Maak een database aan en voer schema.sql uit.
 3. Pas config.php aan met je database credentials.
 4. Start een webserver (bijv. met php -S localhost:8000) en open index.php.
+5. Na installatie en eerste inlog passwords resetten en generate_password_hashes.php verwijderen.
 
 ## Gebruik
 - index.php: Overzicht van transacties

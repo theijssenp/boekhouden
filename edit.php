@@ -1,9 +1,24 @@
 <?php
+require 'auth_functions.php';
+require_login();
+
+// Get user info and admin status
+$user_id = get_current_user_id();
+$is_admin = is_admin();
+
 require 'config.php';
 
 $id = $_GET['id'];
-$stmt = $pdo->prepare("SELECT * FROM transactions WHERE id = ?");
-$stmt->execute([$id]);
+
+// Check if user can access this transaction
+if ($is_admin) {
+    $stmt = $pdo->prepare("SELECT * FROM transactions WHERE id = ?");
+    $stmt->execute([$id]);
+} else {
+    $stmt = $pdo->prepare("SELECT * FROM transactions WHERE id = ? AND user_id = ?");
+    $stmt->execute([$id, $user_id]);
+}
+
 $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$transaction) {
@@ -11,7 +26,18 @@ if (!$transaction) {
     exit;
 }
 
-$categories = $pdo->query("SELECT * FROM categories")->fetchAll(PDO::FETCH_ASSOC);
+// Get categories accessible to the current user
+if ($is_admin) {
+    $categories = $pdo->query("SELECT * FROM categories ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $stmt = $pdo->prepare("
+        SELECT * FROM categories
+        WHERE is_system = 1 OR user_id = ?
+        ORDER BY name
+    ");
+    $stmt->execute([$user_id]);
+    $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 
 // Function to get applicable VAT rates for a specific date
 function get_vat_rates_for_date($pdo, $date) {
@@ -55,8 +81,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $vat_deductible = isset($_POST['vat_deductible']) ? 1 : 0;
     $invoice_number = !empty($_POST['invoice_number']) ? $_POST['invoice_number'] : null;
 
-    $stmt = $pdo->prepare("UPDATE transactions SET date = ?, description = ?, amount = ?, type = ?, category_id = ?, vat_percentage = ?, vat_included = ?, vat_deductible = ?, invoice_number = ? WHERE id = ?");
-    $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $id]);
+    // Update transaction with user_id check for non-admin users
+    if ($is_admin) {
+        $stmt = $pdo->prepare("UPDATE transactions SET date = ?, description = ?, amount = ?, type = ?, category_id = ?, vat_percentage = ?, vat_included = ?, vat_deductible = ?, invoice_number = ? WHERE id = ?");
+        $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $id]);
+    } else {
+        $stmt = $pdo->prepare("UPDATE transactions SET date = ?, description = ?, amount = ?, type = ?, category_id = ?, vat_percentage = ?, vat_included = ?, vat_deductible = ?, invoice_number = ? WHERE id = ? AND user_id = ?");
+        $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $id, $user_id]);
+    }
 
     header('Location: index.php');
     exit;
@@ -69,6 +101,134 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transactie Bewerken - Boekhouden</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Profile dropdown styles */
+        .profile-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .profile-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .profile-icon:hover {
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 50px;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        
+        .dropdown-content.show {
+            display: block;
+        }
+        
+        .dropdown-header {
+            padding: 15px;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+        }
+        
+        .dropdown-header .user-name {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 3px;
+        }
+        
+        .dropdown-header .user-email {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+        
+        .dropdown-header .user-role {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-top: 5px;
+        }
+        
+        .dropdown-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .dropdown-menu li {
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .dropdown-menu li:last-child {
+            border-bottom: none;
+        }
+        
+        .dropdown-menu a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            color: #333;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        
+        .dropdown-menu a:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .dropdown-menu a i {
+            width: 20px;
+            color: #7f8c8d;
+        }
+        
+        .dropdown-menu .logout-link {
+            color: #e74c3c !important;
+        }
+        
+        .dropdown-menu .logout-link:hover {
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+        
+        .dropdown-menu .logout-link i {
+            color: #e74c3c;
+        }
+        
+        .user-info-nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+            color: white;
+            font-size: 0.9rem;
+            position: relative;
+        }
+    </style>
 </head>
 <body>
     <div class="header">
@@ -83,7 +243,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <li><a href="profit_loss.php">Kosten Baten</a></li>
             <li><a href="btw_kwartaal.php">BTW Kwartaal</a></li>
             <li><a href="balans.php">Balans</a></li>
+            <?php if ($is_admin): ?>
+                <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
+            <?php endif; ?>
         </ul>
+        <div class="user-info-nav">
+            <div class="profile-dropdown">
+                <?php
+                $user = get_current_user_data();
+                $user_initial = strtoupper(substr($user['full_name'] ?? $user['username'] ?? 'U', 0, 1));
+                $user_name = $user['full_name'] ?? $user['username'] ?? 'Gebruiker';
+                $user_email = $user['email'] ?? '';
+                $user_role = $user['user_type'] ?? 'gebruiker';
+                $role_display = ($user_role === 'administrator') ? 'Administrator' : 'Gebruiker';
+                ?>
+                <div class="profile-icon" id="profileIcon">
+                    <?php echo $user_initial; ?>
+                </div>
+                <div class="dropdown-content" id="profileDropdown">
+                    <div class="dropdown-header">
+                        <div class="user-name"><?php echo htmlspecialchars($user_name); ?></div>
+                        <?php if ($user_email): ?>
+                        <div class="user-email"><?php echo htmlspecialchars($user_email); ?></div>
+                        <?php endif; ?>
+                        <div class="user-role"><?php echo htmlspecialchars($role_display); ?></div>
+                    </div>
+                    <ul class="dropdown-menu">
+                        <li><a href="index.php"><i class="fas fa-home"></i> Dashboard</a></li>
+                        <?php if ($is_admin): ?>
+                        <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a></li>
+                        <li><a href="admin_users.php"><i class="fas fa-users"></i> Gebruikersbeheer</a></li>
+                        <?php endif; ?>
+                        <li><a href="logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </nav>
 
     <main class="main-content">
@@ -314,6 +509,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Also trigger calculation on page load if there's already VAT data
             if (parseFloat(vatPercentageSelect.value) > 0 && parseFloat(amountInput.value) !== 0) {
                 updateVatCalculation();
+            }
+            
+            // Profile dropdown functionality
+            const profileIcon = document.getElementById('profileIcon');
+            const profileDropdown = document.getElementById('profileDropdown');
+            
+            if (profileIcon && profileDropdown) {
+                // Toggle dropdown on click
+                profileIcon.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    profileDropdown.classList.toggle('show');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!profileIcon.contains(e.target) && !profileDropdown.contains(e.target)) {
+                        profileDropdown.classList.remove('show');
+                    }
+                });
+                
+                // Close dropdown when clicking on a link inside it
+                const dropdownLinks = profileDropdown.querySelectorAll('a');
+                dropdownLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        profileDropdown.classList.remove('show');
+                    });
+                });
             }
         });
     </script>

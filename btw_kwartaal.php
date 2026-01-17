@@ -1,4 +1,10 @@
 <?php
+require 'auth_functions.php';
+require_login();
+
+// Get user info and admin status
+$user_id = get_current_user_id();
+$is_admin = is_admin();
 require 'config.php';
 
 // Determine year and quarter
@@ -66,88 +72,175 @@ function get_vat_rate_name($pdo, $date, $percentage) {
 }
 
 // Get transactions for the quarter
-if ($vatColumnsExist) {
-    // With VAT columns
-    if ($vatRatesTableExists) {
-        // Include VAT rate name from vat_rates table
-        $stmt = $pdo->prepare("
-            SELECT
-                t.*,
-                c.name as category,
-                -- Calculate VAT amounts
-                CASE
-                    WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                        t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
-                    WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
-                        t.amount * (t.vat_percentage / 100)
-                    ELSE 0
-                END as vat_amount,
-                -- Calculate base amount
-                CASE
-                    WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                        t.amount / (1 + (t.vat_percentage / 100))
-                    ELSE t.amount
-                END as base_amount,
-                -- Get VAT rate name
-                COALESCE(
-                    (SELECT vr.name
-                     FROM vat_rates vr
-                     WHERE vr.is_active = TRUE
-                       AND vr.rate = t.vat_percentage
-                       AND vr.effective_from <= t.date
-                       AND (vr.effective_to IS NULL OR vr.effective_to >= t.date)
-                     ORDER BY vr.effective_from DESC
-                     LIMIT 1),
+if ($is_admin) {
+    // Admin sees all transactions
+    if ($vatColumnsExist) {
+        // With VAT columns
+        if ($vatRatesTableExists) {
+            // Include VAT rate name from vat_rates table
+            $stmt = $pdo->prepare("
+                SELECT
+                    t.*,
+                    c.name as category,
+                    -- Calculate VAT amounts
                     CASE
-                        WHEN t.vat_percentage = 21 THEN 'Hoog tarief'
-                        WHEN t.vat_percentage = 9 THEN 'Verlaagd tarief'
-                        WHEN t.vat_percentage = 0 THEN 'Vrijgesteld'
-                        ELSE CONCAT(t.vat_percentage, '%')
-                    END
-                ) as vat_rate_name
-            FROM transactions t
-            LEFT JOIN categories c ON t.category_id = c.id
-            WHERE t.date BETWEEN ? AND ?
-            ORDER BY t.date
-        ");
+                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                            t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
+                        WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
+                            t.amount * (t.vat_percentage / 100)
+                        ELSE 0
+                    END as vat_amount,
+                    -- Calculate base amount
+                    CASE
+                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                            t.amount / (1 + (t.vat_percentage / 100))
+                        ELSE t.amount
+                    END as base_amount,
+                    -- Get VAT rate name
+                    COALESCE(
+                        (SELECT vr.name
+                         FROM vat_rates vr
+                         WHERE vr.is_active = TRUE
+                           AND vr.rate = t.vat_percentage
+                           AND vr.effective_from <= t.date
+                           AND (vr.effective_to IS NULL OR vr.effective_to >= t.date)
+                         ORDER BY vr.effective_from DESC
+                         LIMIT 1),
+                        CASE
+                            WHEN t.vat_percentage = 21 THEN 'Hoog tarief'
+                            WHEN t.vat_percentage = 9 THEN 'Verlaagd tarief'
+                            WHEN t.vat_percentage = 0 THEN 'Vrijgesteld'
+                            ELSE CONCAT(t.vat_percentage, '%')
+                        END
+                    ) as vat_rate_name
+                FROM transactions t
+                LEFT JOIN categories c ON t.category_id = c.id
+                WHERE t.date BETWEEN ? AND ?
+                ORDER BY t.date
+            ");
+        } else {
+            // Without vat_rates table
+            $stmt = $pdo->prepare("
+                SELECT
+                    t.*,
+                    c.name as category,
+                    -- Calculate VAT amounts
+                    CASE
+                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                            t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
+                        WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
+                            t.amount * (t.vat_percentage / 100)
+                        ELSE 0
+                    END as vat_amount,
+                    -- Calculate base amount
+                    CASE
+                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                            t.amount / (1 + (t.vat_percentage / 100))
+                        ELSE t.amount
+                    END as base_amount,
+                    CONCAT(t.vat_percentage, '%') as vat_rate_name
+                FROM transactions t
+                LEFT JOIN categories c ON t.category_id = c.id
+                WHERE t.date BETWEEN ? AND ?
+                ORDER BY t.date
+            ");
+        }
     } else {
-        // Without vat_rates table
+        // Without VAT columns (simplified)
         $stmt = $pdo->prepare("
-            SELECT
-                t.*,
-                c.name as category,
-                -- Calculate VAT amounts
-                CASE
-                    WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                        t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
-                    WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
-                        t.amount * (t.vat_percentage / 100)
-                    ELSE 0
-                END as vat_amount,
-                -- Calculate base amount
-                CASE
-                    WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                        t.amount / (1 + (t.vat_percentage / 100))
-                    ELSE t.amount
-                END as base_amount,
-                CONCAT(t.vat_percentage, '%') as vat_rate_name
+            SELECT t.*, c.name as category
             FROM transactions t
             LEFT JOIN categories c ON t.category_id = c.id
             WHERE t.date BETWEEN ? AND ?
             ORDER BY t.date
         ");
     }
+    $stmt->execute([$startDate, $endDate]);
 } else {
-    // Without VAT columns (simplified)
-    $stmt = $pdo->prepare("
-        SELECT t.*, c.name as category
-        FROM transactions t
-        LEFT JOIN categories c ON t.category_id = c.id
-        WHERE t.date BETWEEN ? AND ?
-        ORDER BY t.date
-    ");
+    // Regular user - only see their own transactions
+    if ($vatColumnsExist) {
+        // With VAT columns
+        if ($vatRatesTableExists) {
+            // Include VAT rate name from vat_rates table
+            $stmt = $pdo->prepare("
+                SELECT
+                    t.*,
+                    c.name as category,
+                    -- Calculate VAT amounts
+                    CASE
+                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                            t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
+                        WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
+                            t.amount * (t.vat_percentage / 100)
+                        ELSE 0
+                    END as vat_amount,
+                    -- Calculate base amount
+                    CASE
+                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                            t.amount / (1 + (t.vat_percentage / 100))
+                        ELSE t.amount
+                    END as base_amount,
+                    -- Get VAT rate name
+                    COALESCE(
+                        (SELECT vr.name
+                         FROM vat_rates vr
+                         WHERE vr.is_active = TRUE
+                           AND vr.rate = t.vat_percentage
+                           AND vr.effective_from <= t.date
+                           AND (vr.effective_to IS NULL OR vr.effective_to >= t.date)
+                         ORDER BY vr.effective_from DESC
+                         LIMIT 1),
+                        CASE
+                            WHEN t.vat_percentage = 21 THEN 'Hoog tarief'
+                            WHEN t.vat_percentage = 9 THEN 'Verlaagd tarief'
+                            WHEN t.vat_percentage = 0 THEN 'Vrijgesteld'
+                            ELSE CONCAT(t.vat_percentage, '%')
+                        END
+                    ) as vat_rate_name
+                FROM transactions t
+                LEFT JOIN categories c ON t.category_id = c.id
+                WHERE t.date BETWEEN ? AND ? AND t.user_id = ?
+                ORDER BY t.date
+            ");
+        } else {
+            // Without vat_rates table
+            $stmt = $pdo->prepare("
+                SELECT
+                    t.*,
+                    c.name as category,
+                    -- Calculate VAT amounts
+                    CASE
+                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                            t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
+                        WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
+                            t.amount * (t.vat_percentage / 100)
+                        ELSE 0
+                    END as vat_amount,
+                    -- Calculate base amount
+                    CASE
+                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                            t.amount / (1 + (t.vat_percentage / 100))
+                        ELSE t.amount
+                    END as base_amount,
+                    CONCAT(t.vat_percentage, '%') as vat_rate_name
+                FROM transactions t
+                LEFT JOIN categories c ON t.category_id = c.id
+                WHERE t.date BETWEEN ? AND ? AND t.user_id = ?
+                ORDER BY t.date
+            ");
+        }
+    } else {
+        // Without VAT columns (simplified)
+        $stmt = $pdo->prepare("
+            SELECT t.*, c.name as category
+            FROM transactions t
+            LEFT JOIN categories c ON t.category_id = c.id
+            WHERE t.date BETWEEN ? AND ? AND t.user_id = ?
+            ORDER BY t.date
+        ");
+    }
+    $stmt->execute([$startDate, $endDate, $user_id]);
 }
-$stmt->execute([$startDate, $endDate]);
 $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Calculate VAT summary
@@ -185,87 +278,174 @@ $vatDetailed = [
 ];
 
 if ($vatColumnsExist) {
-    if ($vatRatesTableExists) {
-        // With historical VAT rates - get detailed breakdown
-        $stmt = $pdo->prepare("
-            SELECT
-                t.vat_percentage,
-                COALESCE(
-                    (SELECT vr.name
-                     FROM vat_rates vr
-                     WHERE vr.is_active = TRUE
-                       AND vr.rate = t.vat_percentage
-                       AND vr.effective_from <= t.date
-                       AND (vr.effective_to IS NULL OR vr.effective_to >= t.date)
-                     ORDER BY vr.effective_from DESC
-                     LIMIT 1),
-                    CASE
-                        WHEN t.vat_percentage = 21 THEN 'Hoog tarief'
-                        WHEN t.vat_percentage = 9 THEN 'Verlaagd tarief'
-                        WHEN t.vat_percentage = 0 THEN 'Vrijgesteld'
-                        ELSE CONCAT(t.vat_percentage, '%')
-                    END
-                ) as vat_rate_name,
-                t.type,
-                SUM(t.amount) as total_amount,
-                COUNT(*) as count,
-                -- Calculate VAT amounts properly
-                SUM(
-                    CASE
-                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                            t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
-                        WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
-                            t.amount * (t.vat_percentage / 100)
-                        ELSE 0
-                    END
-                ) as total_vat_amount,
-                -- Calculate base amount (excl. VAT)
-                SUM(
-                    CASE
-                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                            t.amount / (1 + (t.vat_percentage / 100))
-                        ELSE t.amount
-                    END
-                ) as base_amount
-            FROM transactions t
-            WHERE t.date BETWEEN ? AND ? AND t.vat_percentage IS NOT NULL
-            GROUP BY t.vat_percentage, vat_rate_name, t.type
-            ORDER BY t.vat_percentage DESC, t.type
-        ");
+    if ($is_admin) {
+        // Admin sees all transactions
+        if ($vatRatesTableExists) {
+            // With historical VAT rates - get detailed breakdown
+            $stmt = $pdo->prepare("
+                SELECT
+                    t.vat_percentage,
+                    COALESCE(
+                        (SELECT vr.name
+                         FROM vat_rates vr
+                         WHERE vr.is_active = TRUE
+                           AND vr.rate = t.vat_percentage
+                           AND vr.effective_from <= t.date
+                           AND (vr.effective_to IS NULL OR vr.effective_to >= t.date)
+                         ORDER BY vr.effective_from DESC
+                         LIMIT 1),
+                        CASE
+                            WHEN t.vat_percentage = 21 THEN 'Hoog tarief'
+                            WHEN t.vat_percentage = 9 THEN 'Verlaagd tarief'
+                            WHEN t.vat_percentage = 0 THEN 'Vrijgesteld'
+                            ELSE CONCAT(t.vat_percentage, '%')
+                        END
+                    ) as vat_rate_name,
+                    t.type,
+                    SUM(t.amount) as total_amount,
+                    COUNT(*) as count,
+                    -- Calculate VAT amounts properly
+                    SUM(
+                        CASE
+                            WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                                t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
+                            WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
+                                t.amount * (t.vat_percentage / 100)
+                            ELSE 0
+                        END
+                    ) as total_vat_amount,
+                    -- Calculate base amount (excl. VAT)
+                    SUM(
+                        CASE
+                            WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                                t.amount / (1 + (t.vat_percentage / 100))
+                            ELSE t.amount
+                        END
+                    ) as base_amount
+                FROM transactions t
+                WHERE t.date BETWEEN ? AND ? AND t.vat_percentage IS NOT NULL
+                GROUP BY t.vat_percentage, vat_rate_name, t.type
+                ORDER BY t.vat_percentage DESC, t.type
+            ");
+        } else {
+            // Without vat_rates table - simple grouping by percentage
+            $stmt = $pdo->prepare("
+                SELECT
+                    vat_percentage,
+                    CONCAT(vat_percentage, '%') as vat_rate_name,
+                    type,
+                    SUM(amount) as total_amount,
+                    COUNT(*) as count,
+                    -- Calculate VAT amounts properly
+                    SUM(
+                        CASE
+                            WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                                amount - (amount / (1 + (vat_percentage / 100)))
+                            WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                                amount * (vat_percentage / 100)
+                            ELSE 0
+                        END
+                    ) as total_vat_amount,
+                    -- Calculate base amount (excl. VAT)
+                    SUM(
+                        CASE
+                            WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                                amount / (1 + (vat_percentage / 100))
+                            ELSE amount
+                        END
+                    ) as base_amount
+                FROM transactions
+                WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL
+                GROUP BY vat_percentage, type
+                ORDER BY vat_percentage DESC, type
+            ");
+        }
+        $stmt->execute([$startDate, $endDate]);
     } else {
-        // Without vat_rates table - simple grouping by percentage
-        $stmt = $pdo->prepare("
-            SELECT
-                vat_percentage,
-                CONCAT(vat_percentage, '%') as vat_rate_name,
-                type,
-                SUM(amount) as total_amount,
-                COUNT(*) as count,
-                -- Calculate VAT amounts properly
-                SUM(
-                    CASE
-                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                            amount - (amount / (1 + (vat_percentage / 100)))
-                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                            amount * (vat_percentage / 100)
-                        ELSE 0
-                    END
-                ) as total_vat_amount,
-                -- Calculate base amount (excl. VAT)
-                SUM(
-                    CASE
-                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                            amount / (1 + (vat_percentage / 100))
-                        ELSE amount
-                    END
-                ) as base_amount
-            FROM transactions
-            WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL
-            GROUP BY vat_percentage, type
-            ORDER BY vat_percentage DESC, type
-        ");
+        // Regular user - only see their own transactions
+        if ($vatRatesTableExists) {
+            // With historical VAT rates - get detailed breakdown
+            $stmt = $pdo->prepare("
+                SELECT
+                    t.vat_percentage,
+                    COALESCE(
+                        (SELECT vr.name
+                         FROM vat_rates vr
+                         WHERE vr.is_active = TRUE
+                           AND vr.rate = t.vat_percentage
+                           AND vr.effective_from <= t.date
+                           AND (vr.effective_to IS NULL OR vr.effective_to >= t.date)
+                         ORDER BY vr.effective_from DESC
+                         LIMIT 1),
+                        CASE
+                            WHEN t.vat_percentage = 21 THEN 'Hoog tarief'
+                            WHEN t.vat_percentage = 9 THEN 'Verlaagd tarief'
+                            WHEN t.vat_percentage = 0 THEN 'Vrijgesteld'
+                            ELSE CONCAT(t.vat_percentage, '%')
+                        END
+                    ) as vat_rate_name,
+                    t.type,
+                    SUM(t.amount) as total_amount,
+                    COUNT(*) as count,
+                    -- Calculate VAT amounts properly
+                    SUM(
+                        CASE
+                            WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                                t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
+                            WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
+                                t.amount * (t.vat_percentage / 100)
+                            ELSE 0
+                        END
+                    ) as total_vat_amount,
+                    -- Calculate base amount (excl. VAT)
+                    SUM(
+                        CASE
+                            WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
+                                t.amount / (1 + (t.vat_percentage / 100))
+                            ELSE t.amount
+                        END
+                    ) as base_amount
+                FROM transactions t
+                WHERE t.date BETWEEN ? AND ? AND t.vat_percentage IS NOT NULL AND t.user_id = ?
+                GROUP BY t.vat_percentage, vat_rate_name, t.type
+                ORDER BY t.vat_percentage DESC, t.type
+            ");
+            $stmt->execute([$startDate, $endDate, $user_id]);
+        } else {
+            // Without vat_rates table - simple grouping by percentage
+            $stmt = $pdo->prepare("
+                SELECT
+                    vat_percentage,
+                    CONCAT(vat_percentage, '%') as vat_rate_name,
+                    type,
+                    SUM(amount) as total_amount,
+                    COUNT(*) as count,
+                    -- Calculate VAT amounts properly
+                    SUM(
+                        CASE
+                            WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                                amount - (amount / (1 + (vat_percentage / 100)))
+                            WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                                amount * (vat_percentage / 100)
+                            ELSE 0
+                        END
+                    ) as total_vat_amount,
+                    -- Calculate base amount (excl. VAT)
+                    SUM(
+                        CASE
+                            WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                                amount / (1 + (vat_percentage / 100))
+                            ELSE amount
+                        END
+                    ) as base_amount
+                FROM transactions
+                WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL AND user_id = ?
+                GROUP BY vat_percentage, type
+                ORDER BY vat_percentage DESC, type
+            ");
+            $stmt->execute([$startDate, $endDate, $user_id]);
+        }
     }
-    $stmt->execute([$startDate, $endDate]);
     $vatByRate = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Organize data by rate for detailed breakdown
@@ -286,72 +466,142 @@ if ($vatColumnsExist) {
 // Get monthly VAT breakdown
 $monthlyVat = [];
 if ($vatColumnsExist) {
-    $stmt = $pdo->prepare("
-        SELECT
-            MONTH(date) as month,
-            YEAR(date) as year,
-            vat_percentage,
-            type,
-            SUM(
-                CASE
-                    WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                        amount - (amount / (1 + (vat_percentage / 100)))
-                    WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                        amount * (vat_percentage / 100)
-                    ELSE 0
-                END
-            ) as vat_amount,
-            SUM(amount) as total_amount,
-            COUNT(*) as count
-        FROM transactions
-        WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL
-        GROUP BY MONTH(date), YEAR(date), vat_percentage, type
-        ORDER BY MONTH(date), vat_percentage DESC, type
-    ");
-    $stmt->execute([$startDate, $endDate]);
+    if ($is_admin) {
+        // Admin sees all transactions
+        $stmt = $pdo->prepare("
+            SELECT
+                MONTH(date) as month,
+                YEAR(date) as year,
+                vat_percentage,
+                type,
+                SUM(
+                    CASE
+                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                            amount - (amount / (1 + (vat_percentage / 100)))
+                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                            amount * (vat_percentage / 100)
+                        ELSE 0
+                    END
+                ) as vat_amount,
+                SUM(amount) as total_amount,
+                COUNT(*) as count
+            FROM transactions
+            WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL
+            GROUP BY MONTH(date), YEAR(date), vat_percentage, type
+            ORDER BY MONTH(date), vat_percentage DESC, type
+        ");
+        $stmt->execute([$startDate, $endDate]);
+    } else {
+        // Regular user - only see their own transactions
+        $stmt = $pdo->prepare("
+            SELECT
+                MONTH(date) as month,
+                YEAR(date) as year,
+                vat_percentage,
+                type,
+                SUM(
+                    CASE
+                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                            amount - (amount / (1 + (vat_percentage / 100)))
+                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                            amount * (vat_percentage / 100)
+                        ELSE 0
+                    END
+                ) as vat_amount,
+                SUM(amount) as total_amount,
+                COUNT(*) as count
+            FROM transactions
+            WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL AND user_id = ?
+            GROUP BY MONTH(date), YEAR(date), vat_percentage, type
+            ORDER BY MONTH(date), vat_percentage DESC, type
+        ");
+        $stmt->execute([$startDate, $endDate, $user_id]);
+    }
     $monthlyVat = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // Get monthly summary
 $monthlySummary = [];
 if ($vatColumnsExist) {
-    $stmt = $pdo->prepare("
-        SELECT
-            MONTH(date) as month,
-            YEAR(date) as year,
-            SUM(CASE WHEN type = 'inkomst' THEN
-                CASE
-                    WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                        amount - (amount / (1 + (vat_percentage / 100)))
-                    WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                        amount * (vat_percentage / 100)
-                    ELSE 0
-                END
-                ELSE 0 END) as vat_income,
-            SUM(CASE WHEN type = 'uitgave' AND vat_deductible = TRUE THEN
-                CASE
-                    WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                        amount - (amount / (1 + (vat_percentage / 100)))
-                    WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                        amount * (vat_percentage / 100)
-                    ELSE 0
-                END
-                ELSE 0 END) as vat_expense_deductible,
-            SUM(CASE WHEN type = 'uitgave' AND (vat_deductible = FALSE OR vat_deductible IS NULL) THEN
-                CASE
-                    WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                        amount - (amount / (1 + (vat_percentage / 100)))
-                    WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                        amount * (vat_percentage / 100)
-                    ELSE 0
-                END
-                ELSE 0 END) as vat_expense_nondeductible
-        FROM transactions
-        WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL
-        GROUP BY MONTH(date), YEAR(date)
-        ORDER BY MONTH(date)
-    ");
-    $stmt->execute([$startDate, $endDate]);
+    if ($is_admin) {
+        // Admin sees all transactions
+        $stmt = $pdo->prepare("
+            SELECT
+                MONTH(date) as month,
+                YEAR(date) as year,
+                SUM(CASE WHEN type = 'inkomst' THEN
+                    CASE
+                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                            amount - (amount / (1 + (vat_percentage / 100)))
+                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                            amount * (vat_percentage / 100)
+                        ELSE 0
+                    END
+                    ELSE 0 END) as vat_income,
+                SUM(CASE WHEN type = 'uitgave' AND vat_deductible = TRUE THEN
+                    CASE
+                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                            amount - (amount / (1 + (vat_percentage / 100)))
+                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                            amount * (vat_percentage / 100)
+                        ELSE 0
+                    END
+                    ELSE 0 END) as vat_expense_deductible,
+                SUM(CASE WHEN type = 'uitgave' AND (vat_deductible = FALSE OR vat_deductible IS NULL) THEN
+                    CASE
+                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                            amount - (amount / (1 + (vat_percentage / 100)))
+                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                            amount * (vat_percentage / 100)
+                        ELSE 0
+                    END
+                    ELSE 0 END) as vat_expense_nondeductible
+            FROM transactions
+            WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL
+            GROUP BY MONTH(date), YEAR(date)
+            ORDER BY MONTH(date)
+        ");
+        $stmt->execute([$startDate, $endDate]);
+    } else {
+        // Regular user - only see their own transactions
+        $stmt = $pdo->prepare("
+            SELECT
+                MONTH(date) as month,
+                YEAR(date) as year,
+                SUM(CASE WHEN type = 'inkomst' THEN
+                    CASE
+                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                            amount - (amount / (1 + (vat_percentage / 100)))
+                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                            amount * (vat_percentage / 100)
+                        ELSE 0
+                    END
+                    ELSE 0 END) as vat_income,
+                SUM(CASE WHEN type = 'uitgave' AND vat_deductible = TRUE THEN
+                    CASE
+                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                            amount - (amount / (1 + (vat_percentage / 100)))
+                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                            amount * (vat_percentage / 100)
+                        ELSE 0
+                    END
+                    ELSE 0 END) as vat_expense_deductible,
+                SUM(CASE WHEN type = 'uitgave' AND (vat_deductible = FALSE OR vat_deductible IS NULL) THEN
+                    CASE
+                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
+                            amount - (amount / (1 + (vat_percentage / 100)))
+                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
+                            amount * (vat_percentage / 100)
+                        ELSE 0
+                    END
+                    ELSE 0 END) as vat_expense_nondeductible
+            FROM transactions
+            WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL AND user_id = ?
+            GROUP BY MONTH(date), YEAR(date)
+            ORDER BY MONTH(date)
+        ");
+        $stmt->execute([$startDate, $endDate, $user_id]);
+    }
     $monthlySummary = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 ?>
@@ -362,6 +612,134 @@ if ($vatColumnsExist) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BTW per Kwartaal - Boekhouden</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Profile dropdown styles */
+        .profile-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .profile-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .profile-icon:hover {
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 50px;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        
+        .dropdown-content.show {
+            display: block;
+        }
+        
+        .dropdown-header {
+            padding: 15px;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+        }
+        
+        .dropdown-header .user-name {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 3px;
+        }
+        
+        .dropdown-header .user-email {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+        
+        .dropdown-header .user-role {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-top: 5px;
+        }
+        
+        .dropdown-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .dropdown-menu li {
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .dropdown-menu li:last-child {
+            border-bottom: none;
+        }
+        
+        .dropdown-menu a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            color: #333;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        
+        .dropdown-menu a:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .dropdown-menu a i {
+            width: 20px;
+            color: #7f8c8d;
+        }
+        
+        .dropdown-menu .logout-link {
+            color: #e74c3c !important;
+        }
+        
+        .dropdown-menu .logout-link:hover {
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+        
+        .dropdown-menu .logout-link i {
+            color: #e74c3c;
+        }
+        
+        .user-info-nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+            color: white;
+            font-size: 0.9rem;
+            position: relative;
+        }
+    </style>
 </head>
 <body>
     <div class="header">
@@ -376,7 +754,42 @@ if ($vatColumnsExist) {
             <li><a href="profit_loss.php">Kosten Baten</a></li>
             <li><a href="btw_kwartaal.php" class="active">BTW Kwartaal</a></li>
             <li><a href="balans.php">Balans</a></li>
+            <?php if ($is_admin): ?>
+                <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
+            <?php endif; ?>
         </ul>
+        <div class="user-info-nav">
+            <div class="profile-dropdown">
+                <?php
+                $user = get_current_user_data();
+                $user_initial = strtoupper(substr($user['full_name'] ?? $user['username'] ?? 'U', 0, 1));
+                $user_name = $user['full_name'] ?? $user['username'] ?? 'Gebruiker';
+                $user_email = $user['email'] ?? '';
+                $user_role = $user['user_type'] ?? 'gebruiker';
+                $role_display = ($user_role === 'administrator') ? 'Administrator' : 'Gebruiker';
+                ?>
+                <div class="profile-icon" id="profileIcon">
+                    <?php echo $user_initial; ?>
+                </div>
+                <div class="dropdown-content" id="profileDropdown">
+                    <div class="dropdown-header">
+                        <div class="user-name"><?php echo htmlspecialchars($user_name); ?></div>
+                        <?php if ($user_email): ?>
+                        <div class="user-email"><?php echo htmlspecialchars($user_email); ?></div>
+                        <?php endif; ?>
+                        <div class="user-role"><?php echo htmlspecialchars($role_display); ?></div>
+                    </div>
+                    <ul class="dropdown-menu">
+                        <li><a href="index.php"><i class="fas fa-home"></i> Dashboard</a></li>
+                        <?php if ($is_admin): ?>
+                        <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a></li>
+                        <li><a href="admin_users.php"><i class="fas fa-users"></i> Gebruikersbeheer</a></li>
+                        <?php endif; ?>
+                        <li><a href="logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </nav>
 
     <main class="main-content">
@@ -573,6 +986,217 @@ if ($vatColumnsExist) {
                         </div>
                     </div>
                     <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+        
+        <!-- Monthly VAT by Rate Breakdown -->
+        <?php if ($vatColumnsExist && !empty($monthlyVat)): ?>
+        <div class="card">
+            <h3 class="card-title">BTW per Tarief per Maand</h3>
+            <p class="neutral">Gedetailleerd overzicht van BTW-bedragen per tarief voor elke maand in het kwartaal</p>
+            
+            <?php
+            // Organize monthly VAT data by month and rate
+            $monthlyByRate = [];
+            $monthNames = [
+                1 => 'Januari', 2 => 'Februari', 3 => 'Maart', 4 => 'April',
+                5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Augustus',
+                9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'December'
+            ];
+            
+            foreach ($monthlyVat as $row) {
+                $month = (int)$row['month'];
+                $rate = $row['vat_percentage'];
+                $type = $row['type'];
+                
+                if (!isset($monthlyByRate[$month])) {
+                    $monthlyByRate[$month] = [
+                        'name' => $monthNames[$month] ?? "Maand $month",
+                        'rates' => []
+                    ];
+                }
+                
+                if (!isset($monthlyByRate[$month]['rates'][$rate])) {
+                    $monthlyByRate[$month]['rates'][$rate] = [
+                        'income' => 0,
+                        'expense' => 0,
+                        'vat_income' => 0,
+                        'vat_expense' => 0,
+                        'total_amount' => 0,
+                        'vat_amount' => 0
+                    ];
+                }
+                
+                if ($type == 'inkomst') {
+                    $monthlyByRate[$month]['rates'][$rate]['income'] += $row['total_amount'];
+                    $monthlyByRate[$month]['rates'][$rate]['vat_income'] += $row['vat_amount'];
+                } else {
+                    $monthlyByRate[$month]['rates'][$rate]['expense'] += $row['total_amount'];
+                    $monthlyByRate[$month]['rates'][$rate]['vat_expense'] += $row['vat_amount'];
+                }
+                
+                $monthlyByRate[$month]['rates'][$rate]['total_amount'] += $row['total_amount'];
+                $monthlyByRate[$month]['rates'][$rate]['vat_amount'] += $row['vat_amount'];
+            }
+            
+            // Sort months
+            ksort($monthlyByRate);
+            ?>
+            
+            <?php foreach ($monthlyByRate as $monthNum => $monthData): ?>
+            <div class="month-section" style="margin-bottom: 2rem; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1rem;">
+                <h4 style="margin-top: 0; color: #2c3e50;"><?php echo $monthData['name']; ?></h4>
+                
+                <div class="table-container">
+                    <table class="data-table" style="font-size: 0.9rem;">
+                        <thead>
+                            <tr>
+                                <th>BTW Tarief</th>
+                                <th>Inkomsten (incl. BTW)</th>
+                                <th>Uitgaven (incl. BTW)</th>
+                                <th>BTW over Inkomsten</th>
+                                <th>BTW over Uitgaven</th>
+                                <th>Totaal BTW</th>
+                                <th>Netto BTW</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            // Sort rates
+                            $rates = array_keys($monthData['rates']);
+                            sort($rates);
+                            
+                            $monthTotalIncome = 0;
+                            $monthTotalExpense = 0;
+                            $monthTotalVatIncome = 0;
+                            $monthTotalVatExpense = 0;
+                            
+                            foreach ($rates as $rate):
+                                $data = $monthData['rates'][$rate];
+                                $netVat = $data['vat_income'] - $data['vat_expense'];
+                                
+                                $monthTotalIncome += $data['income'];
+                                $monthTotalExpense += $data['expense'];
+                                $monthTotalVatIncome += $data['vat_income'];
+                                $monthTotalVatExpense += $data['vat_expense'];
+                            ?>
+                            <tr>
+                                <td><strong><?php echo $rate; ?>%</strong></td>
+                                <td class="positive">€<?php echo number_format($data['income'], 2); ?></td>
+                                <td class="negative">€<?php echo number_format($data['expense'], 2); ?></td>
+                                <td class="negative">€<?php echo number_format($data['vat_income'], 2); ?></td>
+                                <td class="positive">€<?php echo number_format($data['vat_expense'], 2); ?></td>
+                                <td>€<?php echo number_format($data['vat_amount'], 2); ?></td>
+                                <td class="<?php echo $netVat >= 0 ? 'negative' : 'positive'; ?>">
+                                    <strong>€<?php echo number_format($netVat, 2); ?></strong>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                        <tfoot style="background: #f8f9fa; font-weight: bold;">
+                            <tr>
+                                <td><strong>Totaal <?php echo $monthData['name']; ?>:</strong></td>
+                                <td class="positive">€<?php echo number_format($monthTotalIncome, 2); ?></td>
+                                <td class="negative">€<?php echo number_format($monthTotalExpense, 2); ?></td>
+                                <td class="negative">€<?php echo number_format($monthTotalVatIncome, 2); ?></td>
+                                <td class="positive">€<?php echo number_format($monthTotalVatExpense, 2); ?></td>
+                                <td>€<?php echo number_format($monthTotalVatIncome + $monthTotalVatExpense, 2); ?></td>
+                                <td class="<?php echo ($monthTotalVatIncome - $monthTotalVatExpense) >= 0 ? 'negative' : 'positive'; ?>">
+                                    <strong>€<?php echo number_format($monthTotalVatIncome - $monthTotalVatExpense, 2); ?></strong>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <!-- Monthly summary cards -->
+                <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 1rem;">
+                    <div class="card" style="background: #f8f9fa; padding: 0.75rem;">
+                        <small class="neutral">Totaal Inkomsten</small>
+                        <div class="positive" style="font-size: 1.2rem;">€<?php echo number_format($monthTotalIncome, 2); ?></div>
+                    </div>
+                    <div class="card" style="background: #f8f9fa; padding: 0.75rem;">
+                        <small class="neutral">Totaal Uitgaven</small>
+                        <div class="negative" style="font-size: 1.2rem;">€<?php echo number_format($monthTotalExpense, 2); ?></div>
+                    </div>
+                    <div class="card" style="background: #f8f9fa; padding: 0.75rem;">
+                        <small class="neutral">BTW over Inkomsten</small>
+                        <div class="negative" style="font-size: 1.2rem;">€<?php echo number_format($monthTotalVatIncome, 2); ?></div>
+                    </div>
+                    <div class="card" style="background: #f8f9fa; padding: 0.75rem;">
+                        <small class="neutral">BTW over Uitgaven</small>
+                        <div class="positive" style="font-size: 1.2rem;">€<?php echo number_format($monthTotalVatExpense, 2); ?></div>
+                    </div>
+                    <div class="card" style="background: linear-gradient(135deg, #2c3e50, #3498db); color: white; padding: 0.75rem; grid-column: span 2;">
+                        <small style="color: rgba(255,255,255,0.9);">Netto BTW <?php echo $monthData['name']; ?></small>
+                        <div style="font-size: 1.5rem; color: white;">
+                            €<?php echo number_format($monthTotalVatIncome - $monthTotalVatExpense, 2); ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+            
+            <!-- Quarterly summary from monthly data -->
+            <div class="card" style="background: linear-gradient(135deg, #34495e, #2c3e50); color: white; margin-top: 2rem;">
+                <h4 style="color: white;">Kwartaal Samenvatting (op basis van maandelijkse data)</h4>
+                <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <?php
+                    $quarterTotalIncome = 0;
+                    $quarterTotalExpense = 0;
+                    $quarterTotalVatIncome = 0;
+                    $quarterTotalVatExpense = 0;
+                    
+                    foreach ($monthlyByRate as $monthData) {
+                        foreach ($monthData['rates'] as $rateData) {
+                            $quarterTotalIncome += $rateData['income'];
+                            $quarterTotalExpense += $rateData['expense'];
+                            $quarterTotalVatIncome += $rateData['vat_income'];
+                            $quarterTotalVatExpense += $rateData['vat_expense'];
+                        }
+                    }
+                    
+                    $quarterNetVat = $quarterTotalVatIncome - $quarterTotalVatExpense;
+                    ?>
+                    <div style="padding: 1rem;">
+                        <small>Totaal Inkomsten Kwartaal</small>
+                        <div style="font-size: 1.5rem; color: #a3e4d7;">€<?php echo number_format($quarterTotalIncome, 2); ?></div>
+                    </div>
+                    <div style="padding: 1rem;">
+                        <small>Totaal Uitgaven Kwartaal</small>
+                        <div style="font-size: 1.5rem; color: #f5b7b1;">€<?php echo number_format($quarterTotalExpense, 2); ?></div>
+                    </div>
+                    <div style="padding: 1rem;">
+                        <small>BTW over Inkomsten</small>
+                        <div style="font-size: 1.5rem; color: #f5b7b1;">€<?php echo number_format($quarterTotalVatIncome, 2); ?></div>
+                    </div>
+                    <div style="padding: 1rem;">
+                        <small>BTW over Uitgaven</small>
+                        <div style="font-size: 1.5rem; color: #a3e4d7;">€<?php echo number_format($quarterTotalVatExpense, 2); ?></div>
+                    </div>
+                    <div style="padding: 1rem; grid-column: span 2; text-align: center;">
+                        <small>Netto BTW Kwartaal</small>
+                        <div style="font-size: 2rem; color: white;">
+                            €<?php echo number_format($quarterNetVat, 2); ?>
+                        </div>
+                        <div style="margin-top: 0.5rem;">
+                            <?php if ($quarterNetVat > 0): ?>
+                            <span style="background: #e74c3c; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.9rem;">
+                                Te betalen aan Belastingdienst
+                            </span>
+                            <?php elseif ($quarterNetVat < 0): ?>
+                            <span style="background: #2ecc71; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.9rem;">
+                                Terug te ontvangen
+                            </span>
+                            <?php else: ?>
+                            <span style="background: #7f8c8d; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.9rem;">
+                                Geen BTW verschuldigd
+                            </span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -876,6 +1500,37 @@ if ($vatColumnsExist) {
             
             yearSelect.addEventListener('change', checkAndSubmit);
             quarterSelect.addEventListener('change', checkAndSubmit);
+        });
+    </script>
+    
+    <script>
+        // Profile dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const profileIcon = document.getElementById('profileIcon');
+            const profileDropdown = document.getElementById('profileDropdown');
+            
+            if (profileIcon && profileDropdown) {
+                // Toggle dropdown on click
+                profileIcon.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    profileDropdown.classList.toggle('show');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!profileIcon.contains(e.target) && !profileDropdown.contains(e.target)) {
+                        profileDropdown.classList.remove('show');
+                    }
+                });
+                
+                // Close dropdown when clicking on a link inside it
+                const dropdownLinks = profileDropdown.querySelectorAll('a');
+                dropdownLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        profileDropdown.classList.remove('show');
+                    });
+                });
+            }
         });
     </script>
 </body>
