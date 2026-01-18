@@ -23,9 +23,9 @@ Open source applicatie om administratie in te voeren.
 
 ![Alt-tekst](transactions.png)
 
-![Alt-tekst](kostenbaten.png)
+![Alt-tekst](png/kostenbaten.png)
 
-![Alt-tekst](Balans.png)
+![Alt-tekst](png/Balans.png)
 
-![Alt-tekst](btw.png)
+![Alt-tekst](png/btw.png)
 
