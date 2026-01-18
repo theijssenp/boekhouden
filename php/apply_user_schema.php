@@ -219,7 +219,7 @@ echo "
     <h2>Volgende stappen</h2>
     <ul>
         <li><a href='login.php' class='button'>Test inloggen</a> - Test de inlogfunctionaliteit</li>
-        <li><a href='index.php' class='button'>Naar hoofdapplicatie</a> - Ga naar de boekhouding</li>
+        <li><a href='../index.php' class='button'>Naar hoofdapplicatie</a> - Ga naar de boekhouding</li>
         <li><a href='admin_dashboard.php' class='button'>Admin dashboard</a> - Beheer gebruikers (na inloggen als admin)</li>
     </ul>
     

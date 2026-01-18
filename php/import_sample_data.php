@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     echo "<p>Total transactions in database: $new_count</p>\n";
     echo "</div>\n";
     
-    echo "<p><a href='index.php'>View Transactions</a> | <a href='sample_data_interface.php'>Back to Sample Data Interface</a></p>\n";
+    echo "<p><a href='../index.php'>View Transactions</a> | <a href='sample_data_interface.php'>Back to Sample Data Interface</a></p>\n";
     
 } else {
     // Show form

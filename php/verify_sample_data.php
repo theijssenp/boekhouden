@@ -7,7 +7,7 @@ echo "<head>\n";
 echo "    <meta charset='UTF-8'>\n";
 echo "    <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n";
 echo "    <title>Sample Data Verification - Boekhouden</title>\n";
-echo "    <link rel='stylesheet' href='style.css'>\n";
+echo "    <link rel='stylesheet' href='../css/style.css'>\n";
 echo "    <style>\n";
 echo "        .verification-container {\n";
 echo "            max-width: 1200px;\n";
@@ -68,7 +68,7 @@ echo "    </div>\n";
 
 echo "    <nav class='nav-bar'>\n";
 echo "        <ul class='nav-links'>\n";
-echo "            <li><a href='index.php'>Transacties</a></li>\n";
+echo "            <li><a href='../index.php'>Transacties</a></li>\n";
 echo "            <li><a href='sample_data_interface.php'>Sample Data</a></li>\n";
 echo "            <li><a href='verify_sample_data.php' class='active'>Verificatie</a></li>\n";
 echo "        </ul>\n";
@@ -379,7 +379,7 @@ if ($tests_failed == 0 && $tests_warning == 0) {
 
 echo "        <div style='margin-top: 20px; text-align: center;'>\n";
 echo "            <a href='sample_data_interface.php' class='btn btn-primary'>Terug naar Sample Data</a>\n";
-echo "            <a href='index.php' class='btn btn-secondary'>Naar Transacties</a>\n";
+echo "            <a href='../index.php' class='btn btn-secondary'>Naar Transacties</a>\n";
 echo "            <a href='backup_interface.php' class='btn btn-warning'>Maak Backup</a>\n";
 echo "        </div>\n";
 

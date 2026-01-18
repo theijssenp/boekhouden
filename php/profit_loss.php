@@ -267,7 +267,7 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kosten Baten Overzicht - Boekhouden</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* Profile dropdown styles */
@@ -405,7 +405,7 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <nav class="nav-bar">
         <ul class="nav-links">
-            <li><a href="index.php">Transacties</a></li>
+            <li><a href="../index.php">Transacties</a></li>
             <li><a href="add.php">Nieuwe Transactie</a></li>
             <li><a href="profit_loss.php" class="active">Kosten Baten</a></li>
             <li><a href="btw_kwartaal.php">BTW Kwartaal</a></li>
@@ -436,12 +436,12 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <div class="user-role"><?php echo htmlspecialchars($role_display); ?></div>
                     </div>
                     <ul class="dropdown-menu">
-                        <li><a href="index.php"><i class="fas fa-home"></i> Dashboard</a></li>
+                        <li><a href="../index.php"><i class="fas fa-home"></i> Dashboard</a></li>
                         <?php if ($is_admin): ?>
                         <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a></li>
                         <li><a href="admin_users.php"><i class="fas fa-users"></i> Gebruikersbeheer</a></li>
                         <?php endif; ?>
-                        <li><a href="logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
+                        <li><a href="../logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
                     </ul>
                 </div>
             </div>
@@ -661,7 +661,7 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="btn-group">
             <a href="btw_kwartaal.php?year=<?php echo $year; ?>" class="btn btn-secondary">BTW per Kwartaal</a>
             <a href="balans.php?date=<?php echo $year; ?>-12-31" class="btn btn-secondary">Jaareind Balans</a>
-            <a href="index.php" class="btn btn-primary">Terug naar Transacties</a>
+            <a href="../index.php" class="btn btn-primary">Terug naar Transacties</a>
         </div>
     </main>
 

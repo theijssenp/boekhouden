@@ -117,7 +117,7 @@ if (file_exists($backupDir)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Database Backup - Boekhouden</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../css/style.css">
     <style>
         .backup-container {
             max-width: 800px;
@@ -234,14 +234,14 @@ if (file_exists($backupDir)) {
 
     <nav class="nav-bar">
         <ul class="nav-links">
-            <li><a href="index.php">Transacties</a></li>
+            <li><a href="../index.php">Transacties</a></li>
             <li><a href="add.php">Nieuwe Transactie</a></li>
             <li><a href="profit_loss.php">Kosten Baten</a></li>
             <li><a href="btw_kwartaal.php">BTW Kwartaal</a></li>
             <li><a href="balans.php">Balans</a></li>
             <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
             <li><a href="backup_interface.php" class="active">Backup</a></li>
-            <li><a href="logout.php" class="logout-link">Uitloggen</a></li>
+            <li><a href="../logout.php" class="logout-link">Uitloggen</a></li>
         </ul>
         <div class="user-info-nav">
             <span class="username"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Gebruiker'); ?></span>
@@ -351,7 +351,7 @@ if (file_exists($backupDir)) {
             
             <div class="btn-group">
                 <a href="admin_dashboard.php" class="btn btn-primary">Terug naar Admin Dashboard</a>
-                <a href="index.php" class="btn btn-secondary">Transacties</a>
+                <a href="../index.php" class="btn btn-secondary">Transacties</a>
                 <a href="admin_users.php" class="btn btn-secondary">Gebruikersbeheer</a>
             </div>
         </div>

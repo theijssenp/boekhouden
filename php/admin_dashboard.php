@@ -235,7 +235,7 @@ try {
                     <i class="fas fa-key"></i>
                     <span>Wachtwoord resetten</span>
                 </a>
-                <a href="logout.php" class="action-button">
+                <a href="../logout.php" class="action-button">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Uitloggen</span>
                 </a>

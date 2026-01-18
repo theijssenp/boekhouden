@@ -162,7 +162,7 @@ function logout_user() {
  */
 function require_login() {
     if (!is_logged_in()) {
-        header('Location: login.php?redirect=' . urlencode($_SERVER['REQUEST_URI']));
+        header('Location: ../login.php?redirect=' . urlencode($_SERVER['REQUEST_URI']));
         exit;
     }
 }

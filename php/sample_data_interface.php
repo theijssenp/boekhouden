@@ -57,7 +57,7 @@ $transaction_count = $pdo->query("SELECT COUNT(*) as count FROM transactions")->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sample Data Generator - Boekhouden</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../css/style.css">
     <style>
         .sample-data-container {
             max-width: 800px;
@@ -149,7 +149,7 @@ $transaction_count = $pdo->query("SELECT COUNT(*) as count FROM transactions")->
 
     <nav class="nav-bar">
         <ul class="nav-links">
-            <li><a href="index.php">Transacties</a></li>
+            <li><a href="../index.php">Transacties</a></li>
             <li><a href="add.php">Nieuwe Transactie</a></li>
             <li><a href="profit_loss.php">Kosten Baten</a></li>
             <li><a href="btw_kwartaal.php">BTW Kwartaal</a></li>
@@ -313,7 +313,7 @@ $transaction_count = $pdo->query("SELECT COUNT(*) as count FROM transactions")->
             </div>
             
             <div class="btn-group">
-                <a href="index.php" class="btn btn-primary">Terug naar Transacties</a>
+                <a href="../index.php" class="btn btn-primary">Terug naar Transacties</a>
                 <a href="backup_interface.php" class="btn btn-secondary">Maak Backup</a>
             </div>
         </div>

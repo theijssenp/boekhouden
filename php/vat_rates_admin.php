@@ -114,7 +114,7 @@ $show_nav = true;
             <a href="admin_dashboard.php" class="btn btn-secondary btn-sm"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
             <a href="admin_users.php" class="btn btn-secondary btn-sm"><i class="fas fa-users"></i> Gebruikers</a>
             <a href="backup_interface.php" class="btn btn-secondary btn-sm"><i class="fas fa-database"></i> Backups</a>
-            <a href="index.php" class="btn btn-secondary btn-sm"><i class="fas fa-home"></i> Transacties</a>
+            <a href="../index.php" class="btn btn-secondary btn-sm"><i class="fas fa-home"></i> Transacties</a>
         </div>
     </div>
 
@@ -482,7 +482,7 @@ mysql -u root -p boekhouden < migrate_vat_rates.sql</pre>
         </div>
         
         <div class="btn-group">
-            <a href="index.php" class="btn btn-primary">Terug naar Transacties</a>
+            <a href="../index.php" class="btn btn-primary">Terug naar Transacties</a>
             <a href="btw_kwartaal.php" class="btn btn-secondary">BTW Kwartaal Overzicht</a>
         </div>
         

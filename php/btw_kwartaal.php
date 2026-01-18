@@ -611,7 +611,7 @@ if ($vatColumnsExist) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BTW per Kwartaal - Boekhouden</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* Profile dropdown styles */
@@ -749,7 +749,7 @@ if ($vatColumnsExist) {
 
     <nav class="nav-bar">
         <ul class="nav-links">
-            <li><a href="index.php">Transacties</a></li>
+            <li><a href="../index.php">Transacties</a></li>
             <li><a href="add.php">Nieuwe Transactie</a></li>
             <li><a href="profit_loss.php">Kosten Baten</a></li>
             <li><a href="btw_kwartaal.php" class="active">BTW Kwartaal</a></li>
@@ -780,12 +780,12 @@ if ($vatColumnsExist) {
                         <div class="user-role"><?php echo htmlspecialchars($role_display); ?></div>
                     </div>
                     <ul class="dropdown-menu">
-                        <li><a href="index.php"><i class="fas fa-home"></i> Dashboard</a></li>
+                        <li><a href="../index.php"><i class="fas fa-home"></i> Dashboard</a></li>
                         <?php if ($is_admin): ?>
                         <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a></li>
                         <li><a href="admin_users.php"><i class="fas fa-users"></i> Gebruikersbeheer</a></li>
                         <?php endif; ?>
-                        <li><a href="logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
+                        <li><a href="../logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
                     </ul>
                 </div>
             </div>
@@ -1481,7 +1481,7 @@ if ($vatColumnsExist) {
         <div class="btn-group">
             <a href="profit_loss.php?year=<?php echo $year; ?>" class="btn btn-secondary">Kosten Baten Overzicht</a>
             <a href="balans.php?date=<?php echo $endDate; ?>" class="btn btn-secondary">Balans Overzicht</a>
-            <a href="index.php" class="btn btn-primary">Terug naar Transacties</a>
+            <a href="../index.php" class="btn btn-primary">Terug naar Transacties</a>
         </div>
     </main>
 

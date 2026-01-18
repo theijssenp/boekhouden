@@ -12,8 +12,8 @@ echo "<style>body { font-family: monospace; } .success { color: green; } .error 
 echo "<h2>Test 1: Authentication Files</h2>\n";
 $files = [
     'auth_functions.php',
-    'login.php', 
-    'logout.php',
+    '../login.php', 
+    '../logout.php',
     'header.php',
     'footer.php',
     'admin_dashboard.php',

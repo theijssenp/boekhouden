@@ -128,7 +128,7 @@ $show_nav = true;
             <a href="admin_users.php" class="btn btn-secondary btn-sm"><i class="fas fa-users"></i> Gebruikers</a>
             <a href="vat_rates_admin.php" class="btn btn-secondary btn-sm"><i class="fas fa-chart-line"></i> BTW Tarieven</a>
             <a href="backup_interface.php" class="btn btn-secondary btn-sm"><i class="fas fa-database"></i> Backups</a>
-            <a href="index.php" class="btn btn-secondary btn-sm"><i class="fas fa-home"></i> Transacties</a>
+            <a href="../index.php" class="btn btn-secondary btn-sm"><i class="fas fa-home"></i> Transacties</a>
         </div>
     </div>
 
@@ -477,7 +477,7 @@ $show_nav = true;
     
     <div class="btn-group">
         <a href="admin_dashboard.php" class="btn btn-primary"><i class="fas fa-tachometer-alt"></i> Terug naar Dashboard</a>
-        <a href="index.php" class="btn btn-secondary"><i class="fas fa-home"></i> Transacties</a>
+        <a href="../index.php" class="btn btn-secondary"><i class="fas fa-home"></i> Transacties</a>
     </div>
 </div> <!-- Close container div -->
 
