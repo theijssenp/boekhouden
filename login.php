@@ -1,3 +1,42 @@
+<?php
+require 'auth_functions.php';
+
+// If already logged in, redirect to appropriate page
+if (is_logged_in()) {
+    if (is_admin()) {
+        header('Location: admin_dashboard.php');
+    } else {
+        header('Location: index.php');
+    }
+    exit;
+}
+
+$error = '';
+$success = '';
+
+// Handle login form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+    
+    if (empty($username) || empty($password)) {
+        $error = 'Vul zowel gebruikersnaam als wachtwoord in';
+    } else {
+        $result = login_user($username, $password);
+        
+        if ($result['success']) {
+            $success = 'Succesvol ingelogd!';
+            
+            // Immediate redirect
+            $redirect = $_GET['redirect'] ?? (is_admin() ? 'admin_dashboard.php' : 'index.php');
+            header("Location: $redirect");
+            exit;
+        } else {
+            $error = $result['message'];
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -136,48 +175,79 @@
             border-radius: 3px;
             font-family: monospace;
         }
+        
+        /* Zandloper (hourglass) spinner */
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        .spinner-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .zandloper {
+            width: 60px;
+            height: 60px;
+            position: relative;
+            animation: rotate 2s linear infinite;
+        }
+        
+        .zandloper:before,
+        .zandloper:after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+        
+        .zandloper:before {
+            top: 0;
+            border-width: 0 25px 30px 25px;
+            border-color: transparent transparent #3498db transparent;
+        }
+        
+        .zandloper:after {
+            bottom: 0;
+            border-width: 30px 25px 0 25px;
+            border-color: #3498db transparent transparent transparent;
+        }
+        
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .spinner-text {
+            margin-top: 20px;
+            color: #2c3e50;
+            font-size: 16px;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        .login-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
-    <?php
-    require 'auth_functions.php';
-    
-    // If already logged in, redirect to appropriate page
-    if (is_logged_in()) {
-        if (is_admin()) {
-            header('Location: admin_dashboard.php');
-        } else {
-            header('Location: index.php');
-        }
-        exit;
-    }
-    
-    $error = '';
-    $success = '';
-    
-    // Handle login form submission
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $username = trim($_POST['username'] ?? '');
-        $password = $_POST['password'] ?? '';
-        
-        if (empty($username) || empty($password)) {
-            $error = 'Vul zowel gebruikersnaam als wachtwoord in';
-        } else {
-            $result = login_user($username, $password);
-            
-            if ($result['success']) {
-                $success = 'Succesvol ingelogd!';
-                
-                // Redirect after short delay
-                $redirect = $_GET['redirect'] ?? (is_admin() ? 'admin_dashboard.php' : 'index.php');
-                header("Refresh: 2; URL=$redirect");
-            } else {
-                $error = $result['message'];
-            }
-        }
-    }
-    ?>
-    
     <div class="login-container">
         <div class="login-header">
             <h1>Boekhouden</h1>
@@ -211,6 +281,14 @@
             
             <button type="submit" class="login-button">Inloggen</button>
         </form>
+        
+        <!-- Spinner overlay -->
+        <div class="spinner-overlay" id="spinnerOverlay">
+            <div class="spinner-content">
+                <div class="zandloper"></div>
+                <div class="spinner-text">Inloggen...</div>
+            </div>
+        </div>
         
         <div class="demo-credentials">
             <h4>Demo inloggegevens:</h4>
@@ -257,6 +335,29 @@
                 const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
                 passwordInput.setAttribute('type', type);
                 toggleButton.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
+            });
+        });
+        
+        // Show spinner on form submit
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.querySelector('form');
+            const loginButton = document.querySelector('.login-button');
+            const spinnerOverlay = document.getElementById('spinnerOverlay');
+            
+            loginForm.addEventListener('submit', function(event) {
+                // Validate form inputs
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+                
+                if (username && password) {
+                    // Show spinner
+                    spinnerOverlay.classList.add('active');
+                    // Disable button
+                    loginButton.disabled = true;
+                    loginButton.textContent = 'Inloggen...';
+                }
+                // If validation fails, let default form submission show error
+                // (spinner won't show)
             });
         });
     </script>
