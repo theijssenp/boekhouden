@@ -13,6 +13,26 @@ if (session_status() === PHP_SESSION_NONE) {
 require 'config.php';
 
 /**
+ * Get base URL for redirects (handles both local and production environments)
+ */
+function get_base_url() {
+    // Check if we're running on localhost or production
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    
+    // Get the base path (if the application is in a subdirectory)
+    $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
+    $base_path = dirname($script_name);
+    
+    // Remove trailing slash if present
+    if ($base_path === '/') {
+        $base_path = '';
+    }
+    
+    return $protocol . $host . $base_path;
+}
+
+/**
  * Hash a password for storage
  */
 function hash_password($password) {
@@ -164,7 +184,9 @@ function logout_user() {
  */
 function require_login() {
     if (!is_logged_in()) {
-        header('Location: ../login.php?redirect=' . urlencode($_SERVER['REQUEST_URI']));
+        $base_url = get_base_url();
+        $redirect_url = $base_url . '/login.php?redirect=' . urlencode($_SERVER['REQUEST_URI']);
+        header('Location: ' . $redirect_url);
         exit;
     }
 }
@@ -176,7 +198,8 @@ function require_admin() {
     require_login();
     
     if (!is_admin()) {
-        header('Location: ../index.php');
+        $base_url = get_base_url();
+        header('Location: ' . $base_url . '/index.php');
         exit;
     }
 }
@@ -188,7 +211,8 @@ function require_administratie_houder() {
     require_login();
     
     if (!is_administratie_houder()) {
-        header('Location: ../index.php');
+        $base_url = get_base_url();
+        header('Location: ' . $base_url . '/index.php');
         exit;
     }
 }

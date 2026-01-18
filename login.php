@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $success = 'Succesvol ingelogd!';
             
             // Immediate redirect
-            $redirect = $_GET['redirect'] ?? (is_admin() ? 'admin_dashboard.php' : 'index.php');
+            $redirect = $_GET['redirect'] ?? (is_admin() ? 'index.php' : 'index.php');
             header("Location: $redirect");
             exit;
         } else {
