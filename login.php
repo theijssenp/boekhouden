@@ -1,5 +1,5 @@
 <?php
-require 'auth_functions.php';
+require 'php/auth_functions.php';
 
 // If already logged in, redirect to appropriate page
 if (is_logged_in()) {

@@ -3,7 +3,7 @@
  * Logout page for Boekhouden
  */
 
-require 'auth_functions.php';
+require 'php/auth_functions.php';
 
 // Logout user
 logout_user();

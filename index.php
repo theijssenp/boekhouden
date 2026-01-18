@@ -1,5 +1,5 @@
 <?php
-require 'auth_functions.php';
+require 'php/auth_functions.php';
 require_login();
 
 // Get user info and admin status early
@@ -298,12 +298,12 @@ function sort_indicator($column, $current_column, $current_order) {
     <nav class="nav-bar">
         <ul class="nav-links">
             <li><a href="index.php" class="active">Transacties</a></li>
-            <li><a href="add.php">Nieuwe Transactie</a></li>
-            <li><a href="profit_loss.php">Kosten Baten</a></li>
-            <li><a href="btw_kwartaal.php">BTW Kwartaal</a></li>
-            <li><a href="balans.php">Balans</a></li>
+            <li><a href="php/add.php">Nieuwe Transactie</a></li>
+            <li><a href="php/profit_loss.php">Kosten Baten</a></li>
+            <li><a href="php/btw_kwartaal.php">BTW Kwartaal</a></li>
+            <li><a href="php/balans.php">Balans</a></li>
             <?php if (is_admin()): ?>
-                <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
+                <li><a href="php/admin_dashboard.php">Admin Dashboard</a></li>
             <?php endif; ?>
         </ul>
         <div class="user-info-nav">
@@ -330,8 +330,8 @@ function sort_indicator($column, $current_column, $current_order) {
                     <ul class="dropdown-menu">
                         <li><a href="index.php"><i class="fas fa-home"></i> Dashboard</a></li>
                         <?php if (is_admin()): ?>
-                        <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a></li>
-                        <li><a href="admin_users.php"><i class="fas fa-users"></i> Gebruikersbeheer</a></li>
+                        <li><a href="php/admin_dashboard.php"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a></li>
+                        <li><a href="php/admin_users.php"><i class="fas fa-users"></i> Gebruikersbeheer</a></li>
                         <?php endif; ?>
                         <li><a href="logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
                     </ul>
@@ -431,7 +431,7 @@ function sort_indicator($column, $current_column, $current_order) {
                     <tr>
                         <td colspan="<?php echo $is_admin ? '8' : '7'; ?>" style="text-align: center; padding: 2rem;">
                             <div class="alert alert-info">
-                                Geen transacties gevonden. <a href="add.php">Voeg uw eerste transactie toe</a>.
+                                Geen transacties gevonden. <a href="php/add.php">Voeg uw eerste transactie toe</a>.
                             </div>
                         </td>
                     </tr>
@@ -494,8 +494,8 @@ function sort_indicator($column, $current_column, $current_order) {
                         <td>
                             <div class="btn-group">
                                 <?php if (can_access_transaction($t['id'])): ?>
-                                    <a href="edit.php?id=<?php echo $t['id']; ?>" class="btn btn-secondary btn-sm">Bewerken</a>
-                                    <a href="delete.php?id=<?php echo $t['id']; ?>"
+                                    <a href="php/edit.php?id=<?php echo $t['id']; ?>" class="btn btn-secondary btn-sm">Bewerken</a>
+                                    <a href="php/delete.php?id=<?php echo $t['id']; ?>"
                                        class="btn btn-danger btn-sm"
                                        onclick="return confirm('Weet je zeker dat je deze transactie wilt verwijderen?')">
                                         Verwijderen
@@ -514,10 +514,10 @@ function sort_indicator($column, $current_column, $current_order) {
         </div>
 
         <div class="btn-group">
-            <a href="add.php" class="btn btn-primary">Nieuwe Transactie Toevoegen</a>
-            <a href="profit_loss.php" class="btn btn-secondary">Kosten Baten Overzicht</a>
-            <a href="btw_kwartaal.php" class="btn btn-secondary">BTW per Kwartaal</a>
-            <a href="balans.php" class="btn btn-secondary">Balans Overzicht</a>
+            <a href="php/add.php" class="btn btn-primary">Nieuwe Transactie Toevoegen</a>
+            <a href="php/profit_loss.php" class="btn btn-secondary">Kosten Baten Overzicht</a>
+            <a href="php/btw_kwartaal.php" class="btn btn-secondary">BTW per Kwartaal</a>
+            <a href="php/balans.php" class="btn btn-secondary">Balans Overzicht</a>
         </div>
         
         <div class="card" style="margin-top: 2rem;">

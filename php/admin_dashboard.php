@@ -7,6 +7,7 @@ require 'auth_functions.php';
 require_admin();
 
 $page_title = "Admin Dashboard";
+$show_nav = true;
 include 'header.php';
 
 // Get statistics

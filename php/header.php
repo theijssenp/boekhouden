@@ -307,7 +307,7 @@
 
     <nav class="nav-bar">
         <ul class="nav-links">
-            <li><a href="index.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">Transacties</a></li>
+            <li><a href="../index.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">Transacties</a></li>
             <li><a href="add.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'add.php' ? 'active' : ''; ?>">Nieuwe Transactie</a></li>
             <li><a href="profit_loss.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'profit_loss.php' ? 'active' : ''; ?>">Kosten Baten</a></li>
             <li><a href="btw_kwartaal.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'btw_kwartaal.php' ? 'active' : ''; ?>">BTW Kwartaal</a></li>
@@ -339,12 +339,12 @@
                         <div class="user-role"><?php echo htmlspecialchars($role_display); ?></div>
                     </div>
                     <ul class="dropdown-menu">
-                        <li><a href="index.php"><i class="fas fa-home"></i> Dashboard</a></li>
+                        <li><a href="../index.php"><i class="fas fa-home"></i> Dashboard</a></li>
                         <?php if (is_admin()): ?>
                         <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a></li>
                         <li><a href="admin_users.php"><i class="fas fa-users"></i> Gebruikersbeheer</a></li>
                         <?php endif; ?>
-                        <li><a href="logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
+                        <li><a href="../logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
                     </ul>
                 </div>
             </div>
