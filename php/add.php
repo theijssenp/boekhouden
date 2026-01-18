@@ -1,4 +1,9 @@
 <?php
+/**
+ * Nieuwe Transactie Toevoegen - Boekhouden
+ *
+ * @author P. Theijssen
+ */
 require 'auth_functions.php';
 require_login();
 
@@ -66,11 +71,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $vat_deductible = isset($_POST['vat_deductible']) ? 1 : 0;
     $invoice_number = !empty($_POST['invoice_number']) ? $_POST['invoice_number'] : null;
 
+    // Validate category based on transaction type
+    if ($type === 'inkomst') {
+        // For income transactions, always use "Inkomsten" category (ID 1)
+        $category_id = 1;
+    } elseif ($type === 'uitgave' && $category_id == 1) {
+        // For expense transactions, cannot use "Inkomsten" category
+        // Reset to empty (no category)
+        $category_id = '';
+    }
+
     // Add user_id to the transaction
     $stmt = $pdo->prepare("INSERT INTO transactions (date, description, amount, type, category_id, vat_percentage, vat_included, vat_deductible, invoice_number, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $user_id]);
 
-    header('Location: index.php');
+    header('Location: ../index.php');
     exit;
 }
 ?>
@@ -212,8 +227,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body>
     <div class="header">
-        <h1>Nieuwe Transactie Toevoegen</h1>
-        <p>Voeg een nieuwe financiële transactie toe aan het systeem</p>
+        <div class="header-logo-container">
+            <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+                    <defs>
+                        <linearGradient id="header-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#3498db;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <rect x="5" y="5" width="50" height="50" rx="10" ry="10" fill="url(#header-gradient)" stroke="#2c3e50" stroke-width="1.5"/>
+                    <rect x="15" y="15" width="30" height="30" rx="3" ry="3" fill="white" opacity="0.9"/>
+                    <rect x="15" y="15" width="5" height="30" rx="1" ry="1" fill="#2c3e50"/>
+                    <line x1="25" y1="20" x2="40" y2="20" stroke="#3498db" stroke-width="1"/>
+                    <line x1="25" y1="25" x2="40" y2="25" stroke="#3498db" stroke-width="1"/>
+                    <line x1="25" y1="30" x2="40" y2="30" stroke="#3498db" stroke-width="1"/>
+                    <line x1="25" y1="35" x2="40" y2="35" stroke="#3498db" stroke-width="1"/>
+                    <line x1="25" y1="40" x2="40" y2="40" stroke="#3498db" stroke-width="1"/>
+                    <text x="32" y="38" text-anchor="middle" fill="#2c3e50" font-family="Arial, sans-serif" font-weight="bold" font-size="14">€</text>
+                    <text x="70" y="30" font-family="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" font-size="22" font-weight="600" fill="white">BOEK!N</text>
+                </svg>
+            </div>
+            <div class="header-text">
+                <h1>Nieuwe Transactie Toevoegen</h1>
+                <p>Voeg een nieuwe financiële transactie toe aan het systeem</p>
+            </div>
+        </div>
     </div>
 
     <nav class="nav-bar">
@@ -456,8 +495,61 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
             }
             
+            // Function to handle category dropdown based on transaction type
+            function updateCategoryBasedOnType() {
+                const categorySelect = document.getElementById('category_id');
+                const selectedType = typeSelect.value;
+                
+                if (selectedType === 'inkomst') {
+                    // Set to "Inkomsten" (ID 1) and disable
+                    categorySelect.value = '1';
+                    categorySelect.disabled = true;
+                    categorySelect.style.backgroundColor = '#f5f5f5';
+                    categorySelect.style.color = '#999';
+                    categorySelect.style.cursor = 'not-allowed';
+                    
+                    // Hide the "Inkomsten" option if it's hidden (should be visible)
+                    const inkomstOption = categorySelect.querySelector('option[value="1"]');
+                    if (inkomstOption) {
+                        inkomstOption.style.display = 'block';
+                    }
+                } else if (selectedType === 'uitgave') {
+                    // Enable dropdown
+                    categorySelect.disabled = false;
+                    categorySelect.style.backgroundColor = '';
+                    categorySelect.style.color = '';
+                    categorySelect.style.cursor = '';
+                    
+                    // Hide the "Inkomsten" option (ID 1)
+                    const inkomstOption = categorySelect.querySelector('option[value="1"]');
+                    if (inkomstOption) {
+                        inkomstOption.style.display = 'none';
+                    }
+                    
+                    // If currently selected is "Inkomsten", reset to empty
+                    if (categorySelect.value === '1') {
+                        categorySelect.value = '';
+                    }
+                } else {
+                    // No type selected, enable and show all options
+                    categorySelect.disabled = false;
+                    categorySelect.style.backgroundColor = '';
+                    categorySelect.style.color = '';
+                    categorySelect.style.cursor = '';
+                    
+                    // Show all options
+                    const allOptions = categorySelect.querySelectorAll('option');
+                    allOptions.forEach(option => {
+                        option.style.display = 'block';
+                    });
+                }
+            }
+            
             // Event listeners
-            typeSelect.addEventListener('change', updateVatDeductible);
+            typeSelect.addEventListener('change', function() {
+                updateVatDeductible();
+                updateCategoryBasedOnType();
+            });
             dateInput.addEventListener('change', function() {
                 updateVatRatesForDate(this.value);
             });
@@ -469,6 +561,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             // Initial calls
             updateVatDeductible();
+            updateCategoryBasedOnType();
             
             // Set today's date as default and update VAT rates
             const today = new Date().toISOString().split('T')[0];
@@ -505,5 +598,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         });
     </script>
+    
+    <footer style="text-align: center; padding: 20px; margin-top: 40px; color: #666; font-size: 12px; border-top: 1px solid #eee;">
+        powered by P. Theijssen
+    </footer>
 </body>
 </html>

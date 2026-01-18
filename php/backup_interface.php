@@ -1,4 +1,12 @@
 <?php
+/**
+ * Database Backup Interface
+ *
+ * Admin interface voor het maken en beheren van database backups
+ *
+ * @author P. Theijssen
+ */
+
 require 'auth_functions.php';
 require_admin();
 
@@ -228,8 +236,32 @@ if (file_exists($backupDir)) {
 </head>
 <body>
     <div class="header">
-        <h1>Database Backup</h1>
-        <p>Maak een backup van de boekhouden database</p>
+        <div class="header-logo-container">
+            <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+                    <defs>
+                        <linearGradient id="header-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#3498db;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <rect x="5" y="5" width="50" height="50" rx="10" ry="10" fill="url(#header-gradient)" stroke="#2c3e50" stroke-width="1.5"/>
+                    <rect x="15" y="15" width="30" height="30" rx="3" ry="3" fill="white" opacity="0.9"/>
+                    <rect x="15" y="15" width="5" height="30" rx="1" ry="1" fill="#2c3e50"/>
+                    <line x1="25" y1="20" x2="40" y2="20" stroke="#3498db" stroke-width="1"/>
+                    <line x1="25" y1="25" x2="40" y2="25" stroke="#3498db" stroke-width="1"/>
+                    <line x1="25" y1="30" x2="40" y2="30" stroke="#3498db" stroke-width="1"/>
+                    <line x1="25" y1="35" x2="40" y2="35" stroke="#3498db" stroke-width="1"/>
+                    <line x1="25" y1="40" x2="40" y2="40" stroke="#3498db" stroke-width="1"/>
+                    <text x="32" y="38" text-anchor="middle" fill="#2c3e50" font-family="Arial, sans-serif" font-weight="bold" font-size="14">€</text>
+                    <text x="70" y="30" font-family="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" font-size="22" font-weight="600" fill="white">BOEK!N</text>
+                </svg>
+            </div>
+            <div class="header-text">
+                <h1>Database Backup</h1>
+                <p>Maak een backup van de boekhouden database</p>
+            </div>
+        </div>
     </div>
 
     <nav class="nav-bar">
@@ -356,6 +388,10 @@ if (file_exists($backupDir)) {
             </div>
         </div>
     </main>
+    
+    <footer style="text-align: center; padding: 20px; margin-top: 40px; color: #666; font-size: 12px; border-top: 1px solid #eee;">
+        powered by P. Theijssen
+    </footer>
 </body>
 </html>
 

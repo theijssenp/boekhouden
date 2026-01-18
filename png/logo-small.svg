@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <defs>
+    <linearGradient id="gradient-small" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3498db;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Logo icon -->
+  <rect x="5" y="5" width="50" height="50" rx="10" ry="10" fill="url(#gradient-small)" stroke="#2c3e50" stroke-width="1.5"/>
+  
+  <!-- Book symbol -->
+  <rect x="15" y="15" width="30" height="30" rx="3" ry="3" fill="white" opacity="0.9"/>
+  
+  <!-- Book spine -->
+  <rect x="15" y="15" width="5" height="30" rx="1" ry="1" fill="#2c3e50"/>
+  
+  <!-- Book lines -->
+  <line x1="25" y1="20" x2="40" y2="20" stroke="#3498db" stroke-width="1"/>
+  <line x1="25" y1="25" x2="40" y2="25" stroke="#3498db" stroke-width="1"/>
+  <line x1="25" y1="30" x2="40" y2="30" stroke="#3498db" stroke-width="1"/>
+  <line x1="25" y1="35" x2="40" y2="35" stroke="#3498db" stroke-width="1"/>
+  <line x1="25" y1="40" x2="40" y2="40" stroke="#3498db" stroke-width="1"/>
+  
+  <!-- Euro symbol -->
+  <text x="32" y="38" text-anchor="middle" fill="#2c3e50" font-family="Arial, sans-serif" font-weight="bold" font-size="14">€</text>
+  
+  <!-- Text -->
+  <text x="70" y="30" font-family="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" font-size="22" font-weight="600" fill="#2c3e50">Boekhouden</text>
+</svg>

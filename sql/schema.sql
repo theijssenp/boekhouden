@@ -2,6 +2,7 @@
 -- Generated: 2026-01-17 14:13:12
 -- Database: boekhouden
 -- Host: localhost:3306
+-- @author P. Theijssen
 create database boekhouden ;
 use boekhouden;
 -- Table structure
@@ -135,6 +136,23 @@ INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('11', '1
 INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('12', '1', 'Communicatiekosten', '1');
 INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('13', '1', 'Cloud diensten', '1');
 INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('14', '1', 'Kantoorkosten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('15', '1', 'Inkoopkosten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('16', '1', 'Personeelskosten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('17', '1', 'Vaste lasten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('18', '1', 'Variabele lasten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('19', '1', 'Financiële kosten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('20', '1', 'Afschrijvingskosten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('21', '1', 'Bijzondere lasten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('22', '1', 'Reiskosten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('23', '1', 'Vertegenwoordigingskosten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('24', '1', 'Advertentiekosten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('25', '1', 'Commissies en provisies', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('26', '1', 'Rentekosten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('27', '1', 'Bankkosten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('28', '1', 'Onderhoud- en reparatiekosten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('29', '1', 'Schade- en verlieskosten', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('30', '1', 'Boetes en sancties', '1');
+INSERT INTO `categories` (`id`, `user_id`, `name`, `is_system`) VALUES ('31', '1', 'Donaties en sponsoring', '1');
 
 --
 -- Dumping data for table `transactions`

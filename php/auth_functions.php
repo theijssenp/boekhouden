@@ -1,6 +1,8 @@
 <?php
 /**
  * Authentication functions for Boekhouden
+ *
+ * @author P. Theijssen
  */
 
 // Start session if not already started
@@ -174,7 +176,7 @@ function require_admin() {
     require_login();
     
     if (!is_admin()) {
-        header('Location: index.php');
+        header('Location: ../index.php');
         exit;
     }
 }
@@ -186,7 +188,7 @@ function require_administratie_houder() {
     require_login();
     
     if (!is_administratie_houder()) {
-        header('Location: index.php');
+        header('Location: ../index.php');
         exit;
     }
 }

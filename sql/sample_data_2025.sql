@@ -2,6 +2,7 @@
 -- Generated: 2026-01-16 18:09:50
 -- 100 expense rows and 30 income rows for 2025
 -- Categories based on existing category IDs
+-- @author P. Theijssen
 
 SET FOREIGN_KEY_CHECKS = 0;
 

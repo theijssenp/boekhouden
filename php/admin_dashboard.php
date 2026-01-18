@@ -1,6 +1,8 @@
 <?php
 /**
  * Admin Dashboard for Boekhouden
+ *
+ * @author P. Theijssen
  */
 
 require 'auth_functions.php';
@@ -227,7 +229,7 @@ try {
         <div class="dashboard-section">
             <h2><i class="fas fa-shield-alt"></i> Beveiliging</h2>
             <div class="action-list">
-                <a href="admin_sessions.php" class="action-button">
+                <a href="admin_audit_log.php" class="action-button">
                     <i class="fas fa-user-clock"></i>
                     <span>Actieve sessies</span>
                 </a>
@@ -616,5 +618,7 @@ function get_activity_icon($action_type) {
     }
 }
 </style>
-
+<footer style="text-align: center; padding: 20px; margin-top: 40px; color: #666; font-size: 12px; border-top: 1px solid #eee;">
+    powered by P. Theijssen
+</footer>
 <?php include 'footer.php'; ?>

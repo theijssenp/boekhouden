@@ -14,7 +14,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if ($_POST['action'] === 'add' || $_POST['action'] === 'edit') {
                 $name = trim($_POST['name']);
-                $description = trim($_POST['description']);
                 $is_system = isset($_POST['is_system']) ? 1 : 0;
                 $user_id = $is_system ? 1 : get_current_user_id(); // System categories owned by admin (id: 1)
                 
@@ -32,10 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     
                     $stmt = $pdo->prepare("
-                        INSERT INTO categories (name, description, user_id, is_system)
-                        VALUES (?, ?, ?, ?)
+                        INSERT INTO categories (name, user_id, is_system)
+                        VALUES (?, ?, ?)
                     ");
-                    $stmt->execute([$name, $description, $user_id, $is_system]);
+                    $stmt->execute([$name, $user_id, $is_system]);
                     $message = 'Categorie succesvol toegevoegd';
                     $messageType = 'success';
                     
@@ -50,11 +49,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     
                     $stmt = $pdo->prepare("
-                        UPDATE categories 
-                        SET name = ?, description = ?, is_system = ?
+                        UPDATE categories
+                        SET name = ?, is_system = ?
                         WHERE id = ?
                     ");
-                    $stmt->execute([$name, $description, $is_system, $id]);
+                    $stmt->execute([$name, $is_system, $id]);
                     $message = 'Categorie succesvol bijgewerkt';
                     $messageType = 'success';
                     
@@ -341,14 +340,8 @@ $show_nav = true;
                 <div class="form-group">
                     <label for="name">Naam *</label>
                     <input type="text" id="name" name="name" class="form-control" required
-                           value="<?php echo $editCategory ? htmlspecialchars($editCategory['name']) : ''; ?>"
+                           value="<?php echo $editCategory ? htmlspecialchars($editCategory['name'] ?? '') : ''; ?>"
                            placeholder="Bijv. Huur, Salaris, Marketing">
-                </div>
-                
-                <div class="form-group">
-                    <label for="description">Omschrijving</label>
-                    <textarea id="description" name="description" class="form-control" rows="3"
-                              placeholder="Optionele beschrijving van deze categorie"><?php echo $editCategory ? htmlspecialchars($editCategory['description']) : ''; ?></textarea>
                 </div>
                 
                 <div class="form-group">
@@ -400,9 +393,6 @@ $show_nav = true;
                     <tr>
                         <td>
                             <strong><?php echo htmlspecialchars($category['name']); ?></strong>
-                            <?php if (isset($category['description']) && $category['description']): ?>
-                            <br><small class="neutral"><?php echo htmlspecialchars($category['description']); ?></small>
-                            <?php endif; ?>
                         </td>
                         <td>
                             <span class="system-badge <?php echo $category['is_system'] ? 'system' : 'user'; ?>">

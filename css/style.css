@@ -43,15 +43,39 @@ body {
     box-shadow: var(--box-shadow);
 }
 
+.header-logo-container {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.logo {
+    flex-shrink: 0;
+}
+
+.logo svg {
+    width: 200px;
+    height: 60px;
+    display: block;
+}
+
+.header-text {
+    flex: 1;
+    min-width: 200px;
+}
+
 .header h1 {
     font-size: 2.2rem;
     margin-bottom: 0.5rem;
     font-weight: 600;
+    color: white;
 }
 
 .header p {
     opacity: 0.9;
     font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .nav-bar {

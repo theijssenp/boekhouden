@@ -2,6 +2,8 @@
 """
 Fixed CSV to SQL converter for kosten.csv specific format
 Handles: spaces around commas, European number format, DD-MM-YYYY dates
+
+@author P. Theijssen
 """
 
 import csv

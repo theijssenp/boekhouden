@@ -1,6 +1,8 @@
 <?php
 /**
  * Logout page for Boekhouden
+ *
+ * @author P. Theijssen
  */
 
 require 'php/auth_functions.php';
