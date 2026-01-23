@@ -9,7 +9,7 @@ require 'php/auth_functions.php';
 // If already logged in, redirect to appropriate page
 if (is_logged_in()) {
     if (is_admin()) {
-        header('Location: admin_dashboard.php');
+        header('Location: php/admin_dashboard.php');
     } else {
         header('Location: index.php');
     }
@@ -48,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inloggen - Boekhouden</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/style.css">
     <style>
         .login-container {

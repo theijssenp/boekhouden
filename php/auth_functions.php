@@ -184,8 +184,31 @@ function logout_user() {
  */
 function require_login() {
     if (!is_logged_in()) {
-        $base_url = get_base_url();
-        $redirect_url = $base_url . '/login.php?redirect=' . urlencode($_SERVER['REQUEST_URI']);
+        // Get protocol and host
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        
+        // Get document root path (where index.php lives)
+        $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
+        
+        // Calculate base path - go up to root if we're in a subdirectory
+        if (strpos($script_name, '/php/') !== false) {
+            // We're in /php subdirectory, login.php is in parent directory
+            $base_path = dirname(dirname($script_name));
+        } else {
+            // We're already at root level
+            $base_path = dirname($script_name);
+        }
+        
+        // Remove trailing slash if present and normalize
+        if ($base_path === '/' || $base_path === '\\') {
+            $base_path = '';
+        }
+        
+        // Build redirect URL - login.php is always at root
+        $login_url = $protocol . $host . $base_path . '/login.php';
+        $redirect_url = $login_url . '?redirect=' . urlencode($_SERVER['REQUEST_URI']);
+        
         header('Location: ' . $redirect_url);
         exit;
     }
@@ -198,8 +221,27 @@ function require_admin() {
     require_login();
     
     if (!is_admin()) {
-        $base_url = get_base_url();
-        header('Location: ' . $base_url . '/index.php');
+        // Get protocol and host
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        
+        // Get document root path
+        $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
+        
+        // Calculate base path
+        if (strpos($script_name, '/php/') !== false) {
+            $base_path = dirname(dirname($script_name));
+        } else {
+            $base_path = dirname($script_name);
+        }
+        
+        if ($base_path === '/' || $base_path === '\\') {
+            $base_path = '';
+        }
+        
+        // index.php is always at root
+        $redirect_url = $protocol . $host . $base_path . '/index.php';
+        header('Location: ' . $redirect_url);
         exit;
     }
 }
@@ -211,8 +253,27 @@ function require_administratie_houder() {
     require_login();
     
     if (!is_administratie_houder()) {
-        $base_url = get_base_url();
-        header('Location: ' . $base_url . '/index.php');
+        // Get protocol and host
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        
+        // Get document root path
+        $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
+        
+        // Calculate base path
+        if (strpos($script_name, '/php/') !== false) {
+            $base_path = dirname(dirname($script_name));
+        } else {
+            $base_path = dirname($script_name);
+        }
+        
+        if ($base_path === '/' || $base_path === '\\') {
+            $base_path = '';
+        }
+        
+        // index.php is always at root
+        $redirect_url = $protocol . $host . $base_path . '/index.php';
+        header('Location: ' . $redirect_url);
         exit;
     }
 }

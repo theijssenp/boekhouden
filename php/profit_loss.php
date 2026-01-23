@@ -267,6 +267,7 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kosten Baten Overzicht - Boekhouden</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -644,10 +645,14 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="alert alert-info">
                 <p><strong>Financiële gezondheid indicatoren:</strong></p>
                 <ul>
-                    <li><strong>Winstmarge:</strong> <?php echo $totalIncome > 0 ? number_format(($profit / $totalIncome) * 100, 1) : '0.0'; ?>% 
-                        (<?php echo ($profit / $totalIncome) * 100 >= 10 ? 'Goed' : (($profit / $totalIncome) * 100 >= 5 ? 'Redelijk' : 'Laag'); ?>)</li>
-                    <li><strong>Kostenratio:</strong> <?php echo $totalIncome > 0 ? number_format(($totalExpenses / $totalIncome) * 100, 1) : '0.0'; ?>% 
-                        (<?php echo ($totalExpenses / $totalIncome) * 100 <= 80 ? 'Goed' : (($totalExpenses / $totalIncome) * 100 <= 90 ? 'Redelijk' : 'Hoog'); ?>)</li>
+                    <?php
+                    $winstmarge = $totalIncome > 0 ? ($profit / $totalIncome) * 100 : 0;
+                    $kostenratio = $totalIncome > 0 ? ($totalExpenses / $totalIncome) * 100 : 0;
+                    ?>
+                    <li><strong>Winstmarge:</strong> <?php echo number_format($winstmarge, 1); ?>%
+                        (<?php echo $winstmarge >= 10 ? 'Goed' : ($winstmarge >= 5 ? 'Redelijk' : 'Laag'); ?>)</li>
+                    <li><strong>Kostenratio:</strong> <?php echo number_format($kostenratio, 1); ?>%
+                        (<?php echo $kostenratio <= 80 ? 'Goed' : ($kostenratio <= 90 ? 'Redelijk' : 'Hoog'); ?>)</li>
                     <li><strong>Groei potentieel:</strong> 
                         <?php 
                         $bestQuarter = 0;
@@ -671,7 +676,7 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <li>Focus op kostenreductie in hoogste uitgavecategorieën</li>
                     <li>Overweeg inkomstenbronnen te diversifiëren</li>
                     <li>Analyseer kwartalen met grootste verliezen</li>
-                    <?php elseif (($profit / $totalIncome) * 100 < 5): ?>
+                    <?php elseif ($totalIncome > 0 && ($profit / $totalIncome) * 100 < 5): ?>
                     <li>Winstmarge is laag - optimaliseer operationele efficiëntie</li>
                     <li>Overweeg prijsaanpassingen of volume-uitbreiding</li>
                     <?php else: ?>

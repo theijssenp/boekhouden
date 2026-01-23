@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+    <defs>
+        <linearGradient id="favicon-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#3498db;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+    <!-- Background circle with gradient -->
+    <circle cx="32" cy="32" r="30" fill="url(#favicon-gradient)"/>
+    
+    <!-- Book/ledger icon -->
+    <rect x="18" y="16" width="28" height="32" rx="2" fill="white" opacity="0.95"/>
+    
+    <!-- Book spine -->
+    <rect x="18" y="16" width="4" height="32" rx="1" fill="#2c3e50"/>
+    
+    <!-- Ledger lines -->
+    <line x1="26" y1="22" x2="42" y2="22" stroke="#3498db" stroke-width="1.5"/>
+    <line x1="26" y1="27" x2="42" y2="27" stroke="#3498db" stroke-width="1.5"/>
+    <line x1="26" y1="32" x2="42" y2="32" stroke="#3498db" stroke-width="1.5"/>
+    <line x1="26" y1="37" x2="42" y2="37" stroke="#3498db" stroke-width="1.5"/>
+    <line x1="26" y1="42" x2="38" y2="42" stroke="#3498db" stroke-width="1.5"/>
+    
+    <!-- Euro symbol -->
+    <text x="32" y="37" text-anchor="middle" fill="#2c3e50" font-family="Arial, sans-serif" font-weight="bold" font-size="18">€</text>
+</svg>

@@ -27,7 +27,7 @@ if ($is_admin) {
 $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$transaction) {
-    header('Location: index.php');
+    header('Location: ../index.php');
     exit;
 }
 
@@ -95,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $id, $user_id]);
     }
 
-    header('Location: index.php');
+    header('Location: ../index.php');
     exit;
 }
 ?>
@@ -105,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transactie Bewerken - Boekhouden</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>

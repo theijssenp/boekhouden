@@ -24,11 +24,11 @@ if ($is_admin) {
     if ($stmt->rowCount() === 0) {
         // No transaction deleted (either doesn't exist or user doesn't have access)
         $_SESSION['error_message'] = "Geen toegang om deze transactie te verwijderen of transactie bestaat niet.";
-        header('Location: index.php');
+        header('Location: ../index.php');
         exit;
     }
 }
 
-header('Location: index.php');
+header('Location: ../index.php');
 exit;
 ?>
