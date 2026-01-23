@@ -332,10 +332,12 @@
 
     <nav class="nav-bar">
         <ul class="nav-links">
-            <li><a href="../index.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">Transacties</a></li>
-            <li><a href="add.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'add.php' ? 'active' : ''; ?>">Nieuwe Transactie</a></li>
-            <li><a href="profit_loss.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'profit_loss.php' ? 'active' : ''; ?>">Kosten Baten</a></li>
-            <li><a href="btw_kwartaal.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'btw_kwartaal.php' ? 'active' : ''; ?>">BTW Kwartaal</a></li>
+            <li><a href="../index.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">Overzicht</a></li>
+            <li><a href="add_income.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'add_income.php' ? 'active' : ''; ?>">Verkoop Boeken</a></li>
+            <li><a href="add_expense.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'add_expense.php' ? 'active' : ''; ?>">Inkoop Boeken</a></li>
+            <li><a href="relations.php" class="<?php echo in_array(basename($_SERVER['PHP_SELF']), ['relations.php', 'add_relation.php', 'edit_relation.php', 'delete_relation.php']) ? 'active' : ''; ?>"><i class="fas fa-address-book"></i> Relaties</a></li>
+            <li><a href="profit_loss.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'profit_loss.php' ? 'active' : ''; ?>">Winst & Verlies</a></li>
+            <li><a href="btw_kwartaal.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'btw_kwartaal.php' ? 'active' : ''; ?>">BTW Overzicht</a></li>
             <li><a href="balans.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'balans.php' ? 'active' : ''; ?>">Balans</a></li>
             <?php if (is_admin()): ?>
                 <li><a href="admin_dashboard.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'admin_dashboard.php' ? 'active' : ''; ?>">Admin Dashboard</a></li>

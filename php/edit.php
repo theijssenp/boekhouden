@@ -31,6 +31,50 @@ if (!$transaction) {
     exit;
 }
 
+// Get active debiteuren (only for current user or admin)
+if ($is_admin) {
+    $stmt_debtors = $pdo->query("
+        SELECT id, relation_code, company_name, email, city
+        FROM relations
+        WHERE relation_type IN ('debiteur', 'beide')
+          AND is_active = TRUE
+        ORDER BY company_name
+    ");
+} else {
+    $stmt_debtors = $pdo->prepare("
+        SELECT id, relation_code, company_name, email, city
+        FROM relations
+        WHERE relation_type IN ('debiteur', 'beide')
+          AND is_active = TRUE
+          AND (user_id = ? OR user_id IS NULL)
+        ORDER BY company_name
+    ");
+    $stmt_debtors->execute([$user_id]);
+}
+$debiteuren = $stmt_debtors->fetchAll(PDO::FETCH_ASSOC);
+
+// Get active crediteuren (only for current user or admin)
+if ($is_admin) {
+    $stmt_creditors = $pdo->query("
+        SELECT id, relation_code, company_name, email, city
+        FROM relations
+        WHERE relation_type IN ('crediteur', 'beide')
+          AND is_active = TRUE
+        ORDER BY company_name
+    ");
+} else {
+    $stmt_creditors = $pdo->prepare("
+        SELECT id, relation_code, company_name, email, city
+        FROM relations
+        WHERE relation_type IN ('crediteur', 'beide')
+          AND is_active = TRUE
+          AND (user_id = ? OR user_id IS NULL)
+        ORDER BY company_name
+    ");
+    $stmt_creditors->execute([$user_id]);
+}
+$crediteuren = $stmt_creditors->fetchAll(PDO::FETCH_ASSOC);
+
 // Get categories accessible to the current user
 if ($is_admin) {
     $categories = $pdo->query("SELECT * FROM categories ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
@@ -85,14 +129,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $vat_included = isset($_POST['vat_included']) ? 1 : 0;
     $vat_deductible = isset($_POST['vat_deductible']) ? 1 : 0;
     $invoice_number = !empty($_POST['invoice_number']) ? $_POST['invoice_number'] : null;
+    $relation_id = !empty($_POST['relation_id']) ? $_POST['relation_id'] : null;
 
     // Update transaction with user_id check for non-admin users
     if ($is_admin) {
-        $stmt = $pdo->prepare("UPDATE transactions SET date = ?, description = ?, amount = ?, type = ?, category_id = ?, vat_percentage = ?, vat_included = ?, vat_deductible = ?, invoice_number = ? WHERE id = ?");
-        $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $id]);
+        $stmt = $pdo->prepare("UPDATE transactions SET date = ?, description = ?, amount = ?, type = ?, category_id = ?, vat_percentage = ?, vat_included = ?, vat_deductible = ?, invoice_number = ?, relation_id = ? WHERE id = ?");
+        $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $relation_id, $id]);
     } else {
-        $stmt = $pdo->prepare("UPDATE transactions SET date = ?, description = ?, amount = ?, type = ?, category_id = ?, vat_percentage = ?, vat_included = ?, vat_deductible = ?, invoice_number = ? WHERE id = ? AND user_id = ?");
-        $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $id, $user_id]);
+        $stmt = $pdo->prepare("UPDATE transactions SET date = ?, description = ?, amount = ?, type = ?, category_id = ?, vat_percentage = ?, vat_included = ?, vat_deductible = ?, invoice_number = ?, relation_id = ? WHERE id = ? AND user_id = ?");
+        $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $relation_id, $id, $user_id]);
     }
 
     header('Location: ../index.php');
@@ -109,6 +154,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Relation add link styling */
+        .relation-add-link {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .relation-add-link:hover {
+            color: #2c3e50;
+            text-decoration: underline;
+        }
+        
+        .relation-add-link i {
+            margin-right: 3px;
+        }
+        
         /* Profile dropdown styles */
         .profile-dropdown {
             position: relative;
@@ -268,10 +330,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <nav class="nav-bar">
         <ul class="nav-links">
-            <li><a href="../index.php">Transacties</a></li>
-            <li><a href="add.php">Nieuwe Transactie</a></li>
-            <li><a href="profit_loss.php">Kosten Baten</a></li>
-            <li><a href="btw_kwartaal.php">BTW Kwartaal</a></li>
+            <li><a href="../index.php">Overzicht</a></li>
+            <li><a href="add_income.php">Verkoop Boeken</a></li>
+            <li><a href="add_expense.php">Inkoop Boeken</a></li>
+            <li><a href="relations.php"><i class="fas fa-address-book"></i> Relaties</a></li>
+            <li><a href="profit_loss.php">Winst & Verlies</a></li>
+            <li><a href="btw_kwartaal.php">BTW Overzicht</a></li>
             <li><a href="balans.php">Balans</a></li>
             <?php if ($is_admin): ?>
                 <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
@@ -343,6 +407,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <small class="form-text">Voer het factuurnummer in voor betere administratie</small>
                 </div>
                 
+                <div class="form-group" id="debiteur-group" style="display: none;">
+                    <label for="relation_id_debiteur">
+                        <i class="fas fa-address-book"></i> Debiteur (Klant)
+                    </label>
+                    <select id="relation_id_debiteur" name="relation_id" class="form-control">
+                        <option value="">Diverse Klanten (geen vaste relatie)</option>
+                        <?php foreach ($debiteuren as $debiteur): ?>
+                        <option value="<?php echo $debiteur['id']; ?>"
+                                <?php echo (isset($transaction['relation_id']) && $transaction['relation_id'] == $debiteur['id']) ? 'selected' : ''; ?>
+                                title="<?php echo htmlspecialchars($debiteur['email'] ?? ''); ?> - <?php echo htmlspecialchars($debiteur['city'] ?? ''); ?>">
+                            <?php echo htmlspecialchars($debiteur['relation_code']); ?> - <?php echo htmlspecialchars($debiteur['company_name']); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="form-text">
+                        Optioneel: Koppel deze verkoop aan een klant.
+                        <a href="add_relation.php?type=debiteur&return=edit.php?id=<?php echo $id; ?>" class="relation-add-link">
+                            <i class="fas fa-plus-circle"></i> Nieuwe debiteur toevoegen
+                        </a>
+                    </small>
+                </div>
+                
+                <div class="form-group" id="crediteur-group" style="display: none;">
+                    <label for="relation_id_crediteur">
+                        <i class="fas fa-address-book"></i> Crediteur (Leverancier)
+                    </label>
+                    <select id="relation_id_crediteur" name="relation_id" class="form-control">
+                        <option value="">Diverse Leveranciers (geen vaste relatie)</option>
+                        <?php foreach ($crediteuren as $crediteur): ?>
+                        <option value="<?php echo $crediteur['id']; ?>"
+                                <?php echo (isset($transaction['relation_id']) && $transaction['relation_id'] == $crediteur['id']) ? 'selected' : ''; ?>
+                                title="<?php echo htmlspecialchars($crediteur['email'] ?? ''); ?> - <?php echo htmlspecialchars($crediteur['city'] ?? ''); ?>">
+                            <?php echo htmlspecialchars($crediteur['relation_code']); ?> - <?php echo htmlspecialchars($crediteur['company_name']); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="form-text">
+                        Optioneel: Koppel deze inkoop aan een leverancier.
+                        <a href="add_relation.php?type=crediteur&return=edit.php?id=<?php echo $id; ?>" class="relation-add-link">
+                            <i class="fas fa-plus-circle"></i> Nieuwe crediteur toevoegen
+                        </a>
+                    </small>
+                </div>
+                
                 <div class="form-group">
                     <label for="amount">Bedrag (€) *</label>
                     <input type="number" id="amount" name="amount" class="form-control"
@@ -411,8 +519,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     Wijzigingen Opslaan
                 </button>
                 <a href="../index.php" class="btn btn-secondary">Annuleren</a>
-                <a href="delete.php?id=<?php echo $transaction['id']; ?>" 
-                   class="btn btn-danger" 
+                <?php if ($transaction['type'] == 'inkomst'): ?>
+                <a href="../pdf/invoice_pdf.php?id=<?php echo $transaction['id']; ?>"
+                   class="btn btn-primary"
+                   target="_blank"
+                   title="Factuur als PDF printen">
+                    <i class="fas fa-file-pdf"></i> Factuur Printen
+                </a>
+                <?php endif; ?>
+                <a href="delete.php?id=<?php echo $transaction['id']; ?>"
+                   class="btn btn-danger"
                    onclick="return confirm('Weet je zeker dat je deze transactie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.')">
                     Verwijderen
                 </a>
@@ -442,6 +558,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             const vatPercentageSelect = document.getElementById('vat_percentage');
             const amountInput = document.getElementById('amount');
             const vatIncludedCheckbox = document.getElementById('vat_included');
+            const debiteurGroup = document.getElementById('debiteur-group');
+            const crediteurGroup = document.getElementById('crediteur-group');
+            const debiteurSelect = document.getElementById('relation_id_debiteur');
+            const crediteurSelect = document.getElementById('relation_id_crediteur');
+            
+            // Update relation dropdown visibility based on transaction type
+            function updateRelationDropdown() {
+                if (typeSelect.value === 'inkomst') {
+                    // Show debiteur, hide crediteur
+                    debiteurGroup.style.display = 'block';
+                    crediteurGroup.style.display = 'none';
+                    // Disable crediteur select to prevent submission
+                    crediteurSelect.disabled = true;
+                    debiteurSelect.disabled = false;
+                } else {
+                    // Show crediteur, hide debiteur
+                    crediteurGroup.style.display = 'block';
+                    debiteurGroup.style.display = 'none';
+                    // Disable debiteur select to prevent submission
+                    debiteurSelect.disabled = true;
+                    crediteurSelect.disabled = false;
+                }
+            }
             
             // Update VAT deductible based on transaction type
             function updateVatDeductible() {
@@ -524,7 +663,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
             
             // Event listeners
-            typeSelect.addEventListener('change', updateVatDeductible);
+            typeSelect.addEventListener('change', function() {
+                updateVatDeductible();
+                updateRelationDropdown();
+            });
             dateInput.addEventListener('change', function() {
                 updateVatRatesForDate(this.value);
             });
@@ -534,6 +676,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             // Initial calls
             updateVatDeductible();
+            updateRelationDropdown();
             updateVatCalculation();
             
             // Also trigger calculation on page load if there's already VAT data

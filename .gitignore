@@ -34,3 +34,8 @@ dump.sql
 config.php
 VERBETERINGEN.md
 README_NEW_FEATURES.md
+PDF_FACTUUR_README.md
+
+# PDF library downloads
+pdf/*.tgz
+pdf/*.tar.gz

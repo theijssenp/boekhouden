@@ -658,6 +658,54 @@ function search_users($query = '', $type_filter = '', $status_filter = '') {
 }
 
 /**
+ * Generate next invoice number for income transactions
+ * Format: YEAR-XXXX (e.g., 2026-0001)
+ */
+function generate_next_invoice_number($user_id = null) {
+    global $pdo;
+    
+    $year = date('Y');
+    $is_admin = is_admin();
+    
+    // Get the highest invoice number for current year
+    if ($is_admin && $user_id === null) {
+        // Admin without specific user: get global highest
+        $stmt = $pdo->prepare("
+            SELECT invoice_number
+            FROM transactions
+            WHERE type = 'inkomst'
+              AND invoice_number LIKE ?
+            ORDER BY invoice_number DESC
+            LIMIT 1
+        ");
+        $stmt->execute(["$year-%"]);
+    } else {
+        // Regular user or admin for specific user
+        $uid = $user_id ?? get_current_user_id();
+        $stmt = $pdo->prepare("
+            SELECT invoice_number
+            FROM transactions
+            WHERE type = 'inkomst'
+              AND invoice_number LIKE ?
+              AND user_id = ?
+            ORDER BY invoice_number DESC
+            LIMIT 1
+        ");
+        $stmt->execute(["$year-%", $uid]);
+    }
+    
+    $lastInvoice = $stmt->fetchColumn();
+    
+    if ($lastInvoice && preg_match('/^' . $year . '-(\d+)$/', $lastInvoice, $matches)) {
+        $nextNumber = intval($matches[1]) + 1;
+    } else {
+        $nextNumber = 1;
+    }
+    
+    return sprintf("%s-%04d", $year, $nextNumber);
+}
+
+/**
  * Validate session on each request
  */
 function validate_session() {

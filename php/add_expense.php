@@ -1,6 +1,6 @@
 <?php
 /**
- * Nieuwe Transactie Toevoegen - Boekhouden
+ * Inkoop Boeken - Nieuwe Uitgave/Kosten Toevoegen
  *
  * @author P. Theijssen
  */
@@ -13,15 +13,37 @@ $is_admin = is_admin();
 
 require 'config.php';
 
-// Get categories accessible to the current user
+// Get active crediteuren (only for current user or admin)
 if ($is_admin) {
-    // Admin can see all categories
-    $categories = $pdo->query("SELECT * FROM categories ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+    $stmt_relations = $pdo->query("
+        SELECT id, relation_code, company_name, email, city
+        FROM relations
+        WHERE relation_type IN ('crediteur', 'beide')
+          AND is_active = TRUE
+        ORDER BY company_name
+    ");
 } else {
-    // Regular users can see system categories and their own categories
+    $stmt_relations = $pdo->prepare("
+        SELECT id, relation_code, company_name, email, city
+        FROM relations
+        WHERE relation_type IN ('crediteur', 'beide')
+          AND is_active = TRUE
+          AND (user_id = ? OR user_id IS NULL)
+        ORDER BY company_name
+    ");
+    $stmt_relations->execute([$user_id]);
+}
+$crediteuren = $stmt_relations->fetchAll(PDO::FETCH_ASSOC);
+
+// Get categories accessible to the current user (exclude "Inkomsten" category)
+if ($is_admin) {
+    // Admin can see all categories except "Inkomsten"
+    $categories = $pdo->query("SELECT * FROM categories WHERE id != 1 ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    // Regular users can see system categories (except "Inkomsten") and their own categories
     $stmt = $pdo->prepare("
         SELECT * FROM categories
-        WHERE is_system = 1 OR user_id = ?
+        WHERE (is_system = 1 OR user_id = ?) AND id != 1
         ORDER BY name
     ");
     $stmt->execute([$user_id]);
@@ -64,31 +86,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $date = $_POST['date'];
     $description = $_POST['description'];
     $amount = $_POST['amount'];
-    $type = $_POST['type'];
+    $type = 'uitgave'; // Always expense for this form
     $category_id = $_POST['category_id'];
     $vat_percentage = $_POST['vat_percentage'] ?? 0;
     $vat_included = isset($_POST['vat_included']) ? 1 : 0;
     $vat_deductible = isset($_POST['vat_deductible']) ? 1 : 0;
     $invoice_number = !empty($_POST['invoice_number']) ? $_POST['invoice_number'] : null;
+    $relation_id = !empty($_POST['relation_id']) ? $_POST['relation_id'] : null;
 
-    // Validate category based on transaction type
-    if ($type === 'inkomst') {
-        // For income transactions, always use "Inkomsten" category (ID 1)
-        $category_id = 1;
-        
-        // Auto-generate invoice number for income if not provided
-        if (empty($invoice_number)) {
-            $invoice_number = generate_next_invoice_number($user_id);
-        }
-    } elseif ($type === 'uitgave' && $category_id == 1) {
-        // For expense transactions, cannot use "Inkomsten" category
-        // Reset to empty (no category)
+    // Validate that category is not "Inkomsten" (ID 1)
+    if ($category_id == 1) {
         $category_id = '';
     }
 
-    // Add user_id to the transaction
-    $stmt = $pdo->prepare("INSERT INTO transactions (date, description, amount, type, category_id, vat_percentage, vat_included, vat_deductible, invoice_number, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $user_id]);
+    // Add user_id and relation_id to the transaction
+    $stmt = $pdo->prepare("INSERT INTO transactions (date, description, amount, type, category_id, vat_percentage, vat_included, vat_deductible, invoice_number, user_id, relation_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $user_id, $relation_id]);
 
     header('Location: ../index.php');
     exit;
@@ -99,11 +112,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nieuwe Transactie Toevoegen - Boekhouden</title>
+    <title>Inkoop Boeken - Boekhouden</title>
     <link rel="icon" type="image/svg+xml" href="../favicon.svg">
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Relation add link styling */
+        .relation-add-link {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .relation-add-link:hover {
+            color: #2c3e50;
+            text-decoration: underline;
+        }
+        
+        .relation-add-link i {
+            margin-right: 3px;
+        }
+        
         /* Profile dropdown styles */
         .profile-dropdown {
             position: relative;
@@ -255,18 +285,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </svg>
             </div>
             <div class="header-text">
-                <h1>Nieuwe Transactie Toevoegen</h1>
-                <p>Voeg een nieuwe financiële transactie toe aan het systeem</p>
+                <h1>Inkoop Boeken</h1>
+                <p>Nieuwe kosten/inkopen registreren met BTW-aftrek</p>
             </div>
         </div>
     </div>
 
     <nav class="nav-bar">
         <ul class="nav-links">
-            <li><a href="../index.php">Transacties</a></li>
-            <li><a href="add.php" class="active">Nieuwe Transactie</a></li>
-            <li><a href="profit_loss.php">Kosten Baten</a></li>
-            <li><a href="btw_kwartaal.php">BTW Kwartaal</a></li>
+            <li><a href="../index.php">Overzicht</a></li>
+            <li><a href="add_income.php">Verkoop Boeken</a></li>
+            <li><a href="add_expense.php" class="active">Inkoop Boeken</a></li>
+            <li><a href="relations.php"><i class="fas fa-address-book"></i> Relaties</a></li>
+            <li><a href="profit_loss.php">Winst & Verlies</a></li>
+            <li><a href="btw_kwartaal.php">BTW Overzicht</a></li>
             <li><a href="balans.php">Balans</a></li>
             <?php if ($is_admin): ?>
                 <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
@@ -307,7 +339,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </nav>
 
     <main class="main-content">
-        <h2 class="section-title">Transactiegegevens</h2>
+        <h2 class="section-title">Inkoopgegevens</h2>
         
         <form method="post" class="transaction-form">
             <div class="card">
@@ -322,30 +354,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="form-group">
                     <label for="description">Omschrijving *</label>
                     <input type="text" id="description" name="description" class="form-control"
-                           placeholder="Bijv. Verkoop product, Betaling leverancier" required>
+                           placeholder="Bijv. Inkoop materialen, Betaling leverancier" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="invoice_number">Factuurnummer <span id="invoice_number_label_optional">(optioneel)</span><span id="invoice_number_label_auto" style="display: none;">(automatisch gegenereerd)</span></label>
+                    <label for="relation_id">
+                        <i class="fas fa-address-book"></i> Crediteur (Leverancier)
+                    </label>
+                    <select id="relation_id" name="relation_id" class="form-control">
+                        <option value="">Diverse Leveranciers (geen vaste relatie)</option>
+                        <?php foreach ($crediteuren as $crediteur): ?>
+                        <option value="<?php echo $crediteur['id']; ?>"
+                                title="<?php echo htmlspecialchars($crediteur['email'] ?? ''); ?> - <?php echo htmlspecialchars($crediteur['city'] ?? ''); ?>">
+                            <?php echo htmlspecialchars($crediteur['relation_code']); ?> - <?php echo htmlspecialchars($crediteur['company_name']); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="form-text">
+                        Optioneel: Koppel deze inkoop aan een leverancier.
+                        <a href="add_relation.php?type=crediteur&return=add_expense.php" class="relation-add-link">
+                            <i class="fas fa-plus-circle"></i> Nieuwe crediteur toevoegen
+                        </a>
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="invoice_number">Factuurnummer <span>(optioneel)</span></label>
                     <input type="text" id="invoice_number" name="invoice_number" class="form-control"
-                           placeholder="Bijv. FACT-2024-001, INV-12345" maxlength="50">
-                    <small class="form-text" id="invoice_number_help">Voer het factuurnummer in voor betere administratie</small>
+                           placeholder="Bijv. FACT-2024-001 of leveranciersnummer" maxlength="50">
+                    <small class="form-text">Voer het factuurnummer van de leverancier in voor betere administratie</small>
                 </div>
                 
                 <div class="form-group">
                     <label for="amount">Bedrag (€) *</label>
                     <input type="number" id="amount" name="amount" class="form-control"
                            step="0.01" placeholder="0.00" required>
-                    <small class="form-text">Positief voor normale transacties, negatief voor creditnota's</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="type">Type *</label>
-                    <select id="type" name="type" class="form-control" required>
-                        <option value="">Selecteer type</option>
-                        <option value="inkomst">Inkomst</option>
-                        <option value="uitgave">Uitgave</option>
-                    </select>
+                    <small class="form-text">Voer het bedrag in zoals op de factuur vermeld</small>
                 </div>
                 
                 <div class="form-group">
@@ -356,6 +400,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <option value="<?php echo $cat['id']; ?>"><?php echo htmlspecialchars($cat['name']); ?></option>
                         <?php endforeach; ?>
                     </select>
+                    <small class="form-text">Kies de kostensoort voor rapportage</small>
                 </div>
             </div>
             
@@ -377,18 +422,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
                 
                 <div class="checkbox-group">
-                    <input type="checkbox" id="vat_included" name="vat_included" value="1">
+                    <input type="checkbox" id="vat_included" name="vat_included" value="1" checked>
                     <label for="vat_included">Bedrag is inclusief BTW</label>
                 </div>
                 
                 <div class="checkbox-group">
-                    <input type="checkbox" id="vat_deductible" name="vat_deductible" value="1">
-                    <label for="vat_deductible">BTW is aftrekbaar (alleen voor uitgaven)</label>
+                    <input type="checkbox" id="vat_deductible" name="vat_deductible" value="1" checked>
+                    <label for="vat_deductible">BTW is aftrekbaar</label>
                 </div>
                 
                 <div class="alert alert-info">
                     <strong>Let op:</strong> BTW is alleen aftrekbaar voor zakelijke uitgaven.
-                    Voor inkomsten is BTW altijd af te dragen.
+                    Voor privé-uitgaven of niet-aftrekbare kosten, vink "BTW is aftrekbaar" uit.
                 </div>
                 
                 <div id="vatCalculationDisplay" class="alert alert-info" style="display: none;">
@@ -398,7 +443,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             <div class="btn-group">
                 <button type="submit" class="btn btn-primary btn-lg">
-                    Transactie Toevoegen
+                    Inkoop Opslaan
                 </button>
                 <a href="../index.php" class="btn btn-secondary">Annuleren</a>
             </div>
@@ -408,29 +453,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <strong>BTW Berekeningswijze:</strong><br>
             - <strong>Inclusief BTW:</strong> BTW wordt berekend van het ingevoerde bedrag<br>
             - <strong>Exclusief BTW:</strong> BTW wordt opgeteld bij het ingevoerde bedrag<br>
-            - <strong>Aftrekbaar:</strong> BTW kan worden verrekend met af te dragen BTW
+            - <strong>Aftrekbaar:</strong> BTW kan worden verrekend met af te dragen BTW op verkopen
         </div>
     </main>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const typeSelect = document.getElementById('type');
-            const vatDeductible = document.getElementById('vat_deductible');
-            const vatDeductibleLabel = document.querySelector('label[for="vat_deductible"]');
             const dateInput = document.getElementById('date');
             const vatPercentageSelect = document.getElementById('vat_percentage');
-            
-            // Update VAT deductible based on transaction type
-            function updateVatDeductible() {
-                if (typeSelect.value === 'uitgave') {
-                    vatDeductible.disabled = false;
-                    vatDeductibleLabel.style.opacity = '1';
-                } else {
-                    vatDeductible.disabled = true;
-                    vatDeductible.checked = false;
-                    vatDeductibleLabel.style.opacity = '0.6';
-                }
-            }
             
             // Update VAT rates based on selected date
             async function updateVatRatesForDate(selectedDate) {
@@ -487,11 +517,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     if (vatIncluded) {
                         baseAmount = amount / (1 + (vatRate / 100));
                         vatAmount = amount - baseAmount;
-                        calculationText = `€${amount.toFixed(2)} inclusief ${vatRate}% BTW = €${baseAmount.toFixed(2)} basisbedrag + €${vatAmount.toFixed(2)} BTW`;
+                        calculationText = `€${amount.toFixed(2)} inclusief ${vatRate}% BTW = €${baseAmount.toFixed(2)} excl. BTW + €${vatAmount.toFixed(2)} BTW`;
                     } else {
                         vatAmount = amount * (vatRate / 100);
                         totalAmount = amount + vatAmount;
-                        calculationText = `€${amount.toFixed(2)} exclusief ${vatRate}% BTW = €${totalAmount.toFixed(2)} totaal (€${amount.toFixed(2)} + €${vatAmount.toFixed(2)} BTW)`;
+                        calculationText = `€${amount.toFixed(2)} excl. ${vatRate}% BTW = €${totalAmount.toFixed(2)} incl. BTW (€${amount.toFixed(2)} + €${vatAmount.toFixed(2)} BTW)`;
                     }
                     
                     vatCalculationText.textContent = calculationText;
@@ -501,103 +531,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
             }
             
-            // Function to handle invoice number field based on transaction type
-            async function updateInvoiceNumberField() {
-                const invoiceNumberInput = document.getElementById('invoice_number');
-                const invoiceNumberLabelOptional = document.getElementById('invoice_number_label_optional');
-                const invoiceNumberLabelAuto = document.getElementById('invoice_number_label_auto');
-                const invoiceNumberHelp = document.getElementById('invoice_number_help');
-                const selectedType = typeSelect.value;
-                
-                if (selectedType === 'inkomst') {
-                    // For income: fetch next invoice number and make field readonly
-                    try {
-                        const response = await fetch('get_next_invoice_number.php');
-                        if (response.ok) {
-                            const data = await response.json();
-                            invoiceNumberInput.value = data.invoice_number;
-                        }
-                    } catch (error) {
-                        console.error('Error fetching invoice number:', error);
-                        // Fallback: generate client-side placeholder
-                        const year = new Date().getFullYear();
-                        invoiceNumberInput.value = `${year}-0001`;
-                    }
-                    
-                    invoiceNumberInput.readOnly = true;
-                    invoiceNumberInput.style.backgroundColor = '#f5f5f5';
-                    invoiceNumberInput.style.cursor = 'not-allowed';
-                    invoiceNumberLabelOptional.style.display = 'none';
-                    invoiceNumberLabelAuto.style.display = 'inline';
-                    invoiceNumberHelp.textContent = 'Factuurnummer wordt automatisch gegenereerd voor inkomsten';
-                } else {
-                    // For expenses: make field editable and clear
-                    invoiceNumberInput.value = '';
-                    invoiceNumberInput.readOnly = false;
-                    invoiceNumberInput.style.backgroundColor = '';
-                    invoiceNumberInput.style.cursor = '';
-                    invoiceNumberLabelOptional.style.display = 'inline';
-                    invoiceNumberLabelAuto.style.display = 'none';
-                    invoiceNumberHelp.textContent = 'Voer het factuurnummer in voor betere administratie';
-                }
-            }
-            
-            // Function to handle category dropdown based on transaction type
-            function updateCategoryBasedOnType() {
-                const categorySelect = document.getElementById('category_id');
-                const selectedType = typeSelect.value;
-                
-                if (selectedType === 'inkomst') {
-                    // Set to "Inkomsten" (ID 1) and disable
-                    categorySelect.value = '1';
-                    categorySelect.disabled = true;
-                    categorySelect.style.backgroundColor = '#f5f5f5';
-                    categorySelect.style.color = '#999';
-                    categorySelect.style.cursor = 'not-allowed';
-                    
-                    // Hide the "Inkomsten" option if it's hidden (should be visible)
-                    const inkomstOption = categorySelect.querySelector('option[value="1"]');
-                    if (inkomstOption) {
-                        inkomstOption.style.display = 'block';
-                    }
-                } else if (selectedType === 'uitgave') {
-                    // Enable dropdown
-                    categorySelect.disabled = false;
-                    categorySelect.style.backgroundColor = '';
-                    categorySelect.style.color = '';
-                    categorySelect.style.cursor = '';
-                    
-                    // Hide the "Inkomsten" option (ID 1)
-                    const inkomstOption = categorySelect.querySelector('option[value="1"]');
-                    if (inkomstOption) {
-                        inkomstOption.style.display = 'none';
-                    }
-                    
-                    // If currently selected is "Inkomsten", reset to empty
-                    if (categorySelect.value === '1') {
-                        categorySelect.value = '';
-                    }
-                } else {
-                    // No type selected, enable and show all options
-                    categorySelect.disabled = false;
-                    categorySelect.style.backgroundColor = '';
-                    categorySelect.style.color = '';
-                    categorySelect.style.cursor = '';
-                    
-                    // Show all options
-                    const allOptions = categorySelect.querySelectorAll('option');
-                    allOptions.forEach(option => {
-                        option.style.display = 'block';
-                    });
-                }
-            }
-            
             // Event listeners
-            typeSelect.addEventListener('change', function() {
-                updateVatDeductible();
-                updateCategoryBasedOnType();
-                updateInvoiceNumberField();
-            });
             dateInput.addEventListener('change', function() {
                 updateVatRatesForDate(this.value);
             });
@@ -607,14 +541,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             document.getElementById('vat_percentage').addEventListener('change', updateVatCalculation);
             document.getElementById('vat_included').addEventListener('change', updateVatCalculation);
             
-            // Initial calls
-            updateVatDeductible();
-            updateCategoryBasedOnType();
-            
             // Set today's date as default and update VAT rates
             const today = new Date().toISOString().split('T')[0];
             dateInput.value = today;
             updateVatRatesForDate(today);
+            
+            // Initial calculation
+            updateVatCalculation();
         });
         
         // Profile dropdown functionality

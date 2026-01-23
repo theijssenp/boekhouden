@@ -266,7 +266,7 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kosten Baten Overzicht - Boekhouden</title>
+    <title>Winst & Verlies Overzicht - Boekhouden</title>
     <link rel="icon" type="image/svg+xml" href="../favicon.svg">
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -422,7 +422,7 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </svg>
             </div>
             <div class="header-text">
-                <h1>Kosten Baten Overzicht</h1>
+                <h1>Winst & Verlies Overzicht</h1>
                 <p>Winst- en verliesrekening per jaar en kwartaal</p>
             </div>
         </div>
@@ -430,10 +430,12 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <nav class="nav-bar">
         <ul class="nav-links">
-            <li><a href="../index.php">Transacties</a></li>
-            <li><a href="add.php">Nieuwe Transactie</a></li>
-            <li><a href="profit_loss.php" class="active">Kosten Baten</a></li>
-            <li><a href="btw_kwartaal.php">BTW Kwartaal</a></li>
+            <li><a href="../index.php">Overzicht</a></li>
+            <li><a href="add_income.php">Verkoop Boeken</a></li>
+            <li><a href="add_expense.php">Inkoop Boeken</a></li>
+            <li><a href="relations.php"><i class="fas fa-address-book"></i> Relaties</a></li>
+            <li><a href="profit_loss.php" class="active">Winst & Verlies</a></li>
+            <li><a href="btw_kwartaal.php">BTW Overzicht</a></li>
             <li><a href="balans.php">Balans</a></li>
             <?php if ($is_admin): ?>
                 <li><a href="admin_dashboard.php">Admin Dashboard</a></li>

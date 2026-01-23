@@ -11,6 +11,13 @@ require_login();
 $user_id = get_current_user_id();
 $is_admin = is_admin();
 
+// Determine tab filter
+$tab = isset($_GET['tab']) ? $_GET['tab'] : 'alle';
+$allowed_tabs = ['alle', 'inkomsten', 'uitgaven'];
+if (!in_array($tab, $allowed_tabs)) {
+    $tab = 'alle';
+}
+
 // Determine sorting parameters
 $sort_column = isset($_GET['sort']) ? $_GET['sort'] : 'date';
 $sort_order = isset($_GET['order']) ? $_GET['order'] : 'asc';
@@ -45,24 +52,51 @@ if ($is_admin) {
 
 $db_column = $db_column_map[$sort_column] ?? 't.date';
 
-// Build SQL query with sorting and user filtering
+// Build WHERE clause based on tab filter
+$where_conditions = [];
+$where_params = [];
+
+// Add tab filter
+if ($tab === 'inkomsten') {
+    $where_conditions[] = "t.type = 'inkomst'";
+} elseif ($tab === 'uitgaven') {
+    $where_conditions[] = "t.type = 'uitgave'";
+}
+
+// Build SQL query with sorting, user filtering, tab filtering, and relation info
 if ($is_admin) {
     // Admin can see all transactions
-    $sql = "SELECT t.*, c.name as category, u.username, u.full_name as user_full_name
+    $where_clause = !empty($where_conditions) ? "WHERE " . implode(" AND ", $where_conditions) : "";
+    $sql = "SELECT t.*, c.name as category, u.username, u.full_name as user_full_name,
+                   r.relation_code, r.company_name as relation_name, r.relation_type
             FROM transactions t
             LEFT JOIN categories c ON t.category_id = c.id
             LEFT JOIN users u ON t.user_id = u.id
+            LEFT JOIN relations r ON t.relation_id = r.id
+            $where_clause
             ORDER BY $db_column $sort_order, t.id $sort_order";
-    $stmt = $pdo->query($sql);
+    
+    if (!empty($where_params)) {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($where_params);
+    } else {
+        $stmt = $pdo->query($sql);
+    }
 } else {
     // Regular users can only see their own transactions
-    $sql = "SELECT t.*, c.name as category
+    $where_conditions[] = "t.user_id = ?";
+    $where_params[] = $user_id;
+    
+    $where_clause = "WHERE " . implode(" AND ", $where_conditions);
+    $sql = "SELECT t.*, c.name as category,
+                   r.relation_code, r.company_name as relation_name, r.relation_type
             FROM transactions t
             LEFT JOIN categories c ON t.category_id = c.id
-            WHERE t.user_id = ?
+            LEFT JOIN relations r ON t.relation_id = r.id
+            $where_clause
             ORDER BY $db_column $sort_order, t.id $sort_order";
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([$user_id]);
+    $stmt->execute($where_params);
 }
 $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -77,13 +111,13 @@ foreach ($transactions as $t) {
 }
 $balans = $totalInkomsten - $totalUitgaven;
 
-// Function to generate sort URL
-function sort_url($column, $current_column, $current_order) {
+// Function to generate sort URL (preserve tab)
+function sort_url($column, $current_column, $current_order, $tab = 'alle') {
     $order = 'asc';
     if ($column == $current_column && $current_order == 'asc') {
         $order = 'desc';
     }
-    return "index.php?sort=$column&order=$order";
+    return "index.php?tab=$tab&sort=$column&order=$order";
 }
 
 // Function to get sort indicator
@@ -327,10 +361,12 @@ function sort_indicator($column, $current_column, $current_order) {
 
     <nav class="nav-bar">
         <ul class="nav-links">
-            <li><a href="index.php" class="active">Transacties</a></li>
-            <li><a href="php/add.php">Nieuwe Transactie</a></li>
-            <li><a href="php/profit_loss.php">Kosten Baten</a></li>
-            <li><a href="php/btw_kwartaal.php">BTW Kwartaal</a></li>
+            <li><a href="index.php" class="active">Overzicht</a></li>
+            <li><a href="php/add_income.php">Verkoop Boeken</a></li>
+            <li><a href="php/add_expense.php">Inkoop Boeken</a></li>
+            <li><a href="php/relations.php"><i class="fas fa-address-book"></i> Relaties</a></li>
+            <li><a href="php/profit_loss.php">Winst & Verlies</a></li>
+            <li><a href="php/btw_kwartaal.php">BTW Overzicht</a></li>
             <li><a href="php/balans.php">Balans</a></li>
             <?php if (is_admin()): ?>
                 <li><a href="php/admin_dashboard.php">Admin Dashboard</a></li>
@@ -372,6 +408,29 @@ function sort_indicator($column, $current_column, $current_order) {
 
     <main class="main-content">
         <h2 class="section-title">Transactie Overzicht</h2>
+        
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button <?php echo $tab === 'alle' ? 'active' : ''; ?>"
+                    onclick="switchTab('alle')">
+                Alle Transacties
+                <span class="tab-badge"><?php echo count($transactions); ?></span>
+            </button>
+            <button class="tab-button <?php echo $tab === 'inkomsten' ? 'active' : ''; ?>"
+                    onclick="switchTab('inkomsten')">
+                Inkomsten
+                <span class="tab-badge"><?php
+                    echo count(array_filter($transactions, function($t) { return $t['type'] == 'inkomst'; }));
+                ?></span>
+            </button>
+            <button class="tab-button <?php echo $tab === 'uitgaven' ? 'active' : ''; ?>"
+                    onclick="switchTab('uitgaven')">
+                Uitgaven
+                <span class="tab-badge"><?php
+                    echo count(array_filter($transactions, function($t) { return $t['type'] == 'uitgave'; }));
+                ?></span>
+            </button>
+        </div>
         
         <div class="table-info">
             <strong>Gesorteerd op:</strong> <?php 
@@ -418,38 +477,39 @@ function sort_indicator($column, $current_column, $current_order) {
                     <tr>
                         <?php if ($is_admin): ?>
                         <th class="sortable-header <?php echo $sort_column == 'user' ? 'active-sort' : ''; ?>"
-                            onclick="window.location.href='<?php echo sort_url('user', $sort_column, $sort_order); ?>'">
+                            onclick="window.location.href='<?php echo sort_url('user', $sort_column, $sort_order, $tab); ?>'">
                             Gebruiker
                             <span class="sort-indicator"><?php echo sort_indicator('user', $sort_column, $sort_order); ?></span>
                         </th>
                         <?php endif; ?>
                         <th class="sortable-header <?php echo $sort_column == 'date' ? 'active-sort' : ''; ?>"
-                            onclick="window.location.href='<?php echo sort_url('date', $sort_column, $sort_order); ?>'">
+                            onclick="window.location.href='<?php echo sort_url('date', $sort_column, $sort_order, $tab); ?>'">
                             Datum
                             <span class="sort-indicator"><?php echo sort_indicator('date', $sort_column, $sort_order); ?></span>
                         </th>
                         <th class="sortable-header <?php echo $sort_column == 'invoice_number' ? 'active-sort' : ''; ?>"
-                            onclick="window.location.href='<?php echo sort_url('invoice_number', $sort_column, $sort_order); ?>'">
+                            onclick="window.location.href='<?php echo sort_url('invoice_number', $sort_column, $sort_order, $tab); ?>'">
                             Factuurnr.
                             <span class="sort-indicator"><?php echo sort_indicator('invoice_number', $sort_column, $sort_order); ?></span>
                         </th>
+                        <th>Relatie</th>
                         <th class="sortable-header <?php echo $sort_column == 'description' ? 'active-sort' : ''; ?>"
-                            onclick="window.location.href='<?php echo sort_url('description', $sort_column, $sort_order); ?>'">
+                            onclick="window.location.href='<?php echo sort_url('description', $sort_column, $sort_order, $tab); ?>'">
                             Omschrijving
                             <span class="sort-indicator"><?php echo sort_indicator('description', $sort_column, $sort_order); ?></span>
                         </th>
                         <th class="sortable-header <?php echo $sort_column == 'amount' ? 'active-sort' : ''; ?>"
-                            onclick="window.location.href='<?php echo sort_url('amount', $sort_column, $sort_order); ?>'">
+                            onclick="window.location.href='<?php echo sort_url('amount', $sort_column, $sort_order, $tab); ?>'">
                             Bedrag
                             <span class="sort-indicator"><?php echo sort_indicator('amount', $sort_column, $sort_order); ?></span>
                         </th>
                         <th class="sortable-header <?php echo $sort_column == 'type' ? 'active-sort' : ''; ?>"
-                            onclick="window.location.href='<?php echo sort_url('type', $sort_column, $sort_order); ?>'">
+                            onclick="window.location.href='<?php echo sort_url('type', $sort_column, $sort_order, $tab); ?>'">
                             Type
                             <span class="sort-indicator"><?php echo sort_indicator('type', $sort_column, $sort_order); ?></span>
                         </th>
                         <th class="sortable-header <?php echo $sort_column == 'category' ? 'active-sort' : ''; ?>"
-                            onclick="window.location.href='<?php echo sort_url('category', $sort_column, $sort_order); ?>'">
+                            onclick="window.location.href='<?php echo sort_url('category', $sort_column, $sort_order, $tab); ?>'">
                             Categorie
                             <span class="sort-indicator"><?php echo sort_indicator('category', $sort_column, $sort_order); ?></span>
                         </th>
@@ -459,9 +519,9 @@ function sort_indicator($column, $current_column, $current_order) {
                 <tbody>
                     <?php if (empty($transactions)): ?>
                     <tr>
-                        <td colspan="<?php echo $is_admin ? '8' : '7'; ?>" style="text-align: center; padding: 2rem;">
+                        <td colspan="<?php echo $is_admin ? '9' : '8'; ?>" style="text-align: center; padding: 2rem;">
                             <div class="alert alert-info">
-                                Geen transacties gevonden. <a href="php/add.php">Voeg uw eerste transactie toe</a>.
+                                Geen transacties gevonden. <a href="php/add_income.php">Verkoop boeken</a> of <a href="php/add_expense.php">Inkoop boeken</a>.
                             </div>
                         </td>
                     </tr>
@@ -487,6 +547,20 @@ function sort_indicator($column, $current_column, $current_order) {
                             </span>
                             <?php else: ?>
                             <span class="neutral" style="font-style: italic; color: #666;">-</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if (!empty($t['relation_name'])): ?>
+                            <a href="php/relations.php?id=<?php echo $t['relation_id']; ?>"
+                               title="<?php echo htmlspecialchars($t['relation_code']); ?> - Klik voor details"
+                               style="text-decoration: none; color: #3498db;">
+                                <i class="fas fa-address-book" style="margin-right: 5px;"></i>
+                                <?php echo htmlspecialchars($t['relation_name']); ?>
+                            </a>
+                            <?php else: ?>
+                            <span class="neutral" style="font-style: italic; color: #666;">
+                                <?php echo $t['type'] == 'inkomst' ? 'Diverse Klanten' : 'Diverse Leveranciers'; ?>
+                            </span>
                             <?php endif; ?>
                         </td>
                         <td><?php echo htmlspecialchars($t['description']); ?></td>
@@ -525,6 +599,14 @@ function sort_indicator($column, $current_column, $current_order) {
                             <div class="btn-group">
                                 <?php if (can_access_transaction($t['id'])): ?>
                                     <a href="php/edit.php?id=<?php echo $t['id']; ?>" class="btn btn-secondary btn-sm">Bewerken</a>
+                                    <?php if ($t['type'] == 'inkomst'): ?>
+                                    <a href="pdf/invoice_pdf.php?id=<?php echo $t['id']; ?>"
+                                       class="btn btn-primary btn-sm"
+                                       target="_blank"
+                                       title="Factuur als PDF printen">
+                                        <i class="fas fa-file-pdf"></i> Factuur
+                                    </a>
+                                    <?php endif; ?>
                                     <a href="php/delete.php?id=<?php echo $t['id']; ?>"
                                        class="btn btn-danger btn-sm"
                                        onclick="return confirm('Weet je zeker dat je deze transactie wilt verwijderen?')">
@@ -532,6 +614,9 @@ function sort_indicator($column, $current_column, $current_order) {
                                     </a>
                                 <?php else: ?>
                                     <span class="btn btn-secondary btn-sm disabled" title="Geen toegang">Bewerken</span>
+                                    <?php if ($t['type'] == 'inkomst'): ?>
+                                    <span class="btn btn-primary btn-sm disabled" title="Geen toegang"><i class="fas fa-file-pdf"></i> Factuur</span>
+                                    <?php endif; ?>
                                     <span class="btn btn-danger btn-sm disabled" title="Geen toegang">Verwijderen</span>
                                 <?php endif; ?>
                             </div>
@@ -544,10 +629,11 @@ function sort_indicator($column, $current_column, $current_order) {
         </div>
 
         <div class="btn-group">
-            <a href="php/add.php" class="btn btn-primary">Nieuwe Transactie Toevoegen</a>
-            <a href="php/profit_loss.php" class="btn btn-secondary">Kosten Baten Overzicht</a>
-            <a href="php/btw_kwartaal.php" class="btn btn-secondary">BTW per Kwartaal</a>
-            <a href="php/balans.php" class="btn btn-secondary">Balans Overzicht</a>
+            <a href="php/add_income.php" class="btn btn-primary">Verkoop Boeken</a>
+            <a href="php/add_expense.php" class="btn btn-primary">Inkoop Boeken</a>
+            <a href="php/profit_loss.php" class="btn btn-secondary">Winst & Verlies</a>
+            <a href="php/btw_kwartaal.php" class="btn btn-secondary">BTW Overzicht</a>
+            <a href="php/balans.php" class="btn btn-secondary">Balans</a>
         </div>
         
         <div class="card" style="margin-top: 2rem;">
@@ -563,6 +649,17 @@ function sort_indicator($column, $current_column, $current_order) {
     </main>
 
     <script>
+        // Tab switching function
+        function switchTab(tab) {
+            // Preserve current sorting parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const sort = urlParams.get('sort') || 'date';
+            const order = urlParams.get('order') || 'asc';
+            
+            // Navigate to new tab with preserved sorting
+            window.location.href = `index.php?tab=${tab}&sort=${sort}&order=${order}`;
+        }
+        
         // Simple confirmation for delete actions
         document.addEventListener('DOMContentLoaded', function() {
             const deleteButtons = document.querySelectorAll('a[href*="delete.php"]');

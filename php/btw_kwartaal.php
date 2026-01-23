@@ -782,10 +782,12 @@ if ($vatColumnsExist) {
 
     <nav class="nav-bar">
         <ul class="nav-links">
-            <li><a href="../index.php">Transacties</a></li>
-            <li><a href="add.php">Nieuwe Transactie</a></li>
-            <li><a href="profit_loss.php">Kosten Baten</a></li>
-            <li><a href="btw_kwartaal.php" class="active">BTW Kwartaal</a></li>
+            <li><a href="../index.php">Overzicht</a></li>
+            <li><a href="add_income.php">Verkoop Boeken</a></li>
+            <li><a href="add_expense.php">Inkoop Boeken</a></li>
+            <li><a href="relations.php"><i class="fas fa-address-book"></i> Relaties</a></li>
+            <li><a href="profit_loss.php">Winst & Verlies</a></li>
+            <li><a href="btw_kwartaal.php" class="active">BTW Overzicht</a></li>
             <li><a href="balans.php">Balans</a></li>
             <?php if ($is_admin): ?>
                 <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
@@ -1512,8 +1514,8 @@ if ($vatColumnsExist) {
         </div>
         
         <div class="btn-group">
-            <a href="profit_loss.php?year=<?php echo $year; ?>" class="btn btn-secondary">Kosten Baten Overzicht</a>
-            <a href="balans.php?date=<?php echo $endDate; ?>" class="btn btn-secondary">Balans Overzicht</a>
+            <a href="profit_loss.php?year=<?php echo $year; ?>" class="btn btn-secondary">Winst & Verlies</a>
+            <a href="balans.php?date=<?php echo $endDate; ?>" class="btn btn-secondary">Balans</a>
             <a href="../index.php" class="btn btn-primary">Terug naar Transacties</a>
         </div>
     </main>
