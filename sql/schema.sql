@@ -3,8 +3,6 @@
 -- Database: boekhouden
 -- Host: localhost:3306
 -- @author P. Theijssen
-create database boekhouden ;
-use boekhouden;
 -- Table structure
 SET FOREIGN_KEY_CHECKS = 0;
 SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
@@ -23,7 +21,7 @@ CREATE TABLE `audit_log` (
   KEY `idx_action_type` (`action_type`),
   KEY `idx_created_at` (`created_at`),
   CONSTRAINT `fk_audit_log_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Audit trail for administrative actions';
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Audit trail for administrative actions';
 
 CREATE TABLE `categories` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -33,7 +31,7 @@ CREATE TABLE `categories` (
   PRIMARY KEY (`id`),
   KEY `idx_user_id` (`user_id`),
   CONSTRAINT `fk_categories_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Transaction categories with user ownership';
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Transaction categories with user ownership';
 
 CREATE TABLE `transactions` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -56,10 +54,8 @@ CREATE TABLE `transactions` (
   KEY `idx_transactions_user_type` (`user_id`,`type`),
   CONSTRAINT `fk_transactions_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=192 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Financial transactions with user ownership';
+) ENGINE=InnoDB AUTO_INCREMENT=192 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Financial transactions with user ownership';
 
-<br />
-<b>Warning</b>:  Undefined array key "Create Table" in <b>/Users/pieter/projects/boekhouden/backup_database.php</b> on line <b>59</b><br />
 ;
 
 CREATE TABLE `user_sessions` (
@@ -74,10 +70,8 @@ CREATE TABLE `user_sessions` (
   KEY `idx_user_id` (`user_id`),
   KEY `idx_expires_at` (`expires_at`),
   CONSTRAINT `fk_user_sessions_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='User session management for security';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='User session management for security';
 
-<br />
-<b>Warning</b>:  Undefined array key "Create Table" in <b>/Users/pieter/projects/boekhouden/backup_database.php</b> on line <b>59</b><br />
 ;
 
 CREATE TABLE `users` (
@@ -100,10 +94,8 @@ CREATE TABLE `users` (
   KEY `fk_created_by` (`created_by`),
   KEY `idx_users_username_active` (`username`,`is_active`),
   CONSTRAINT `fk_users_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='System users with authentication information';
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='System users with authentication information';
 
-<br />
-<b>Warning</b>:  Undefined array key "Create Table" in <b>/Users/pieter/projects/boekhouden/backup_database.php</b> on line <b>59</b><br />
 ;
 
 CREATE TABLE `vat_rates` (
@@ -119,7 +111,7 @@ CREATE TABLE `vat_rates` (
   PRIMARY KEY (`id`),
   KEY `idx_effective_dates` (`effective_from`,`effective_to`,`is_active`),
   KEY `idx_rate_active` (`rate`,`is_active`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Data dump
 --
@@ -291,19 +283,8 @@ INSERT INTO `transactions` (`id`, `user_id`, `date`, `description`, `amount`, `t
 INSERT INTO `transactions` (`id`, `user_id`, `date`, `description`, `amount`, `type`, `category_id`, `vat_percentage`, `vat_included`, `vat_deductible`, `created_at`, `invoice_number`) VALUES ('191', NULL, '2026-01-17', 'testje', '20.00', 'uitgave', '7', '21.00', '1', '1', '2026-01-17 15:09:48', NULL);
 
 --
--- Dumping data for table `user_categories`
 --
 
-INSERT INTO `user_categories` (`id`, `user_id`, `name`, `is_system`, `username`, `user_full_name`) VALUES ('1', '1', 'Inkomsten', '1', 'admin', 'System Administrator');
-INSERT INTO `user_categories` (`id`, `user_id`, `name`, `is_system`, `username`, `user_full_name`) VALUES ('3', '1', 'Overig', '1', 'admin', 'System Administrator');
-INSERT INTO `user_categories` (`id`, `user_id`, `name`, `is_system`, `username`, `user_full_name`) VALUES ('7', '1', 'Transportkosten', '1', 'admin', 'System Administrator');
-INSERT INTO `user_categories` (`id`, `user_id`, `name`, `is_system`, `username`, `user_full_name`) VALUES ('8', '1', 'Administratiekosten', '1', 'admin', 'System Administrator');
-INSERT INTO `user_categories` (`id`, `user_id`, `name`, `is_system`, `username`, `user_full_name`) VALUES ('9', '1', 'Hotelkosten', '1', 'admin', 'System Administrator');
-INSERT INTO `user_categories` (`id`, `user_id`, `name`, `is_system`, `username`, `user_full_name`) VALUES ('10', '1', 'Verzekeringskosten', '1', 'admin', 'System Administrator');
-INSERT INTO `user_categories` (`id`, `user_id`, `name`, `is_system`, `username`, `user_full_name`) VALUES ('11', '1', 'Andere kosten', '1', 'admin', 'System Administrator');
-INSERT INTO `user_categories` (`id`, `user_id`, `name`, `is_system`, `username`, `user_full_name`) VALUES ('12', '1', 'Communicatiekosten', '1', 'admin', 'System Administrator');
-INSERT INTO `user_categories` (`id`, `user_id`, `name`, `is_system`, `username`, `user_full_name`) VALUES ('13', '1', 'Cloud diensten', '1', 'admin', 'System Administrator');
-INSERT INTO `user_categories` (`id`, `user_id`, `name`, `is_system`, `username`, `user_full_name`) VALUES ('14', '1', 'Kantoorkosten', '1', 'admin', 'System Administrator');
 
 --
 -- Dumping data for table `user_sessions`
