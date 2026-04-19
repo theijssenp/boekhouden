@@ -140,6 +140,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $relation_id, $id, $user_id]);
     }
 
+    // Handle receipt operations
+    require 'receipt_functions.php';
+
+    // Remove receipt if checkbox is checked
+    if (isset($_POST['remove_receipt']) && $_POST['remove_receipt'] == 1) {
+        if (!empty($transaction['receipt_blob'])) {
+            remove_receipt_from_transaction($pdo, $id, $user_id, $is_admin);
+        }
+    }
+
+    // Upload new receipt (overrides remove if both are submitted)
+    if (!empty($_FILES['receipt']['name'])) {
+        $validation = validate_receipt_upload($_FILES['receipt']);
+        if ($validation['valid']) {
+            $receipt_data = process_receipt_upload($_FILES['receipt']);
+            if ($receipt_data) {
+                save_receipt_to_transaction($pdo, $id, $receipt_data, $user_id, $is_admin);
+            }
+        }
+    }
+
     header('Location: ../index.php');
     exit;
 }
@@ -383,7 +404,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <strong>Aangemaakt:</strong> <?php echo date('d-m-Y H:i', strtotime($transaction['created_at'])); ?>
         </div>
         
-        <form method="post" class="transaction-form">
+        <form method="post" class="transaction-form" enctype="multipart/form-data">
             <div class="card">
                 <h3 class="card-title">Basisgegevens</h3>
                 
@@ -478,8 +499,38 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <?php endforeach; ?>
                     </select>
                 </div>
+
+                <div class="form-group">
+                    <label for="receipt">
+                        <i class="fas fa-receipt"></i> Bonnetje <span>(optioneel)</span>
+                    </label>
+                    <?php if (!empty($transaction['receipt_blob'])): ?>
+                    <div class="receipt-preview">
+                        <a href="view_receipt.php?id=<?php echo $transaction['id']; ?>"
+                           target="_blank"
+                           class="btn btn-secondary btn-sm">
+                            <i class="fas fa-eye"></i>
+                            <?php echo htmlspecialchars($transaction['receipt_original_name']); ?>
+                        </a>
+                        <label class="receipt-remove-label">
+                            <input type="checkbox" name="remove_receipt" value="1">
+                            Bonnetje verwijderen
+                        </label>
+                    </div>
+                    <small class="form-text" style="margin-bottom: 0.5rem;">
+                        Upload een nieuw bestand om het huidige bonnetje te vervangen.
+                    </small>
+                    <?php endif; ?>
+                    <input type="file" id="receipt" name="receipt"
+                           class="form-control"
+                           accept="image/*,application/pdf"
+                           <?php echo empty($transaction['receipt_blob']) ? 'capture="environment"' : ''; ?>>
+                    <small class="form-text">
+                        Toegestane formaten: JPG, PNG, GIF, PDF (max 5MB).
+                    </small>
+                </div>
             </div>
-            
+
             <div class="card">
                 <h3 class="card-title">BTW Instellingen</h3>
                 

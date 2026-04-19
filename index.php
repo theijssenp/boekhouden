@@ -513,13 +513,14 @@ function sort_indicator($column, $current_column, $current_order) {
                             Categorie
                             <span class="sort-indicator"><?php echo sort_indicator('category', $sort_column, $sort_order); ?></span>
                         </th>
+                        <th>Bon</th>
                         <th>Acties</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($transactions)): ?>
                     <tr>
-                        <td colspan="<?php echo $is_admin ? '9' : '8'; ?>" style="text-align: center; padding: 2rem;">
+                        <td colspan="<?php echo $is_admin ? '10' : '9'; ?>" style="text-align: center; padding: 2rem;">
                             <div class="alert alert-info">
                                 Geen transacties gevonden. <a href="php/add_income.php">Verkoop boeken</a> of <a href="php/add_expense.php">Inkoop boeken</a>.
                             </div>
@@ -595,6 +596,20 @@ function sort_indicator($column, $current_column, $current_order) {
                             </span>
                         </td>
                         <td><?php echo htmlspecialchars($t['category'] ?: 'Geen categorie'); ?></td>
+                        <td>
+                            <?php if (!empty($t['receipt_blob'])): ?>
+                            <a href="php/view_receipt.php?id=<?php echo $t['id']; ?>"
+                               target="_blank"
+                               title="Bonnetje bekijken: <?php echo htmlspecialchars($t['receipt_original_name'] ?? ''); ?>"
+                               class="receipt-icon-active">
+                                <i class="fas fa-receipt"></i>
+                            </a>
+                            <?php else: ?>
+                            <span class="receipt-icon-inactive" title="Geen bonnetje">
+                                <i class="fas fa-receipt"></i>
+                            </span>
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <div class="btn-group">
                                 <?php if (can_access_transaction($t['id'])): ?>

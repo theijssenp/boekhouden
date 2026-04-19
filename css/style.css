@@ -883,3 +883,66 @@ input[type="checkbox"], input[type="radio"] {
 .vat-table-total td {
     border-top: 2px solid var(--gray-dark);
 }
+
+/* Receipt upload */
+.receipt-preview {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background-color: var(--gray-light);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--gray-medium);
+    margin-bottom: 0.75rem;
+}
+
+.receipt-preview .btn {
+    margin: 0;
+}
+
+.receipt-remove-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: normal;
+    font-size: 0.85rem;
+    color: var(--danger-color);
+    cursor: pointer;
+}
+
+input[type="file"].form-control {
+    padding: 0.5rem;
+}
+
+input[type="file"].form-control::file-selector-button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: var(--border-radius);
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 1rem;
+    transition: var(--transition);
+}
+
+input[type="file"].form-control::file-selector-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.receipt-icon-active {
+    color: var(--secondary-color);
+    font-size: 1.1rem;
+    text-decoration: none;
+}
+
+.receipt-icon-active:hover {
+    color: var(--accent-color);
+}
+
+.receipt-icon-inactive {
+    color: var(--gray-medium);
+    font-size: 1.1rem;
+}

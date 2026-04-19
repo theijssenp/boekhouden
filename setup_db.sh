@@ -42,6 +42,10 @@ CREATE TABLE IF NOT EXISTS `relations` (
 
 ALTER TABLE transactions ADD COLUMN IF NOT EXISTS `relation_id` int DEFAULT NULL AFTER `invoice_number`;
 ALTER TABLE transactions ADD KEY `idx_relation_id` (`relation_id`);
+
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS `receipt_blob` longblob DEFAULT NULL AFTER `invoice_number`;
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS `receipt_original_name` varchar(255) DEFAULT NULL AFTER `receipt_blob`;
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS `receipt_mime_type` varchar(100) DEFAULT NULL AFTER `receipt_original_name`;
 SQL
 
 echo "Config aanmaken..."

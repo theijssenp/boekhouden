@@ -10,6 +10,10 @@ require 'config.php';
 
 $id = $_GET['id'];
 
+// Clear receipt BLOB from transaction before deletion
+require 'receipt_functions.php';
+remove_receipt_from_transaction($pdo, $id, $user_id, $is_admin);
+
 // Check if user can access this transaction
 if ($is_admin) {
     // Admin can delete any transaction

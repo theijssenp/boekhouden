@@ -103,6 +103,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $stmt = $pdo->prepare("INSERT INTO transactions (date, description, amount, type, category_id, vat_percentage, vat_included, vat_deductible, invoice_number, user_id, relation_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $user_id, $relation_id]);
 
+    // Handle receipt upload
+    if (!empty($_FILES['receipt']['name'])) {
+        require 'receipt_functions.php';
+        $transaction_id = $pdo->lastInsertId();
+
+        $validation = validate_receipt_upload($_FILES['receipt']);
+        if ($validation['valid']) {
+            $receipt_data = process_receipt_upload($_FILES['receipt']);
+            if ($receipt_data) {
+                save_receipt_to_transaction($pdo, $transaction_id, $receipt_data, $user_id, $is_admin);
+            }
+        }
+    }
+
     header('Location: ../index.php');
     exit;
 }
@@ -341,7 +355,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <main class="main-content">
         <h2 class="section-title">Inkoopgegevens</h2>
         
-        <form method="post" class="transaction-form">
+        <form method="post" class="transaction-form" enctype="multipart/form-data">
             <div class="card">
                 <h3 class="card-title">Basisgegevens</h3>
                 
@@ -401,6 +415,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <?php endforeach; ?>
                     </select>
                     <small class="form-text">Kies de kostensoort voor rapportage</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="receipt">
+                        <i class="fas fa-receipt"></i> Bonnetje <span>(optioneel)</span>
+                    </label>
+                    <input type="file" id="receipt" name="receipt"
+                           class="form-control"
+                           accept="image/*,application/pdf"
+                           capture="environment">
+                    <small class="form-text">
+                        Maak een foto of upload een scan van het bonnetje. Toegestaan: JPG, PNG, GIF, PDF (max 5MB).
+                    </small>
                 </div>
             </div>
             
