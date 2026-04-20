@@ -164,264 +164,54 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     header('Location: ../index.php');
     exit;
 }
+
+$page_title = 'Transactie Bewerken';
+$page_subtitle = 'Bewerk transactie #' . $transaction['id'] . ' van ' . date('d-m-Y', strtotime($transaction['date']));
+$page_css = <<<'CSS'
+/* Relation add link styling */
+.relation-add-link {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.relation-add-link:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
+
+.relation-add-link i {
+    margin-right: 3px;
+}
+CSS;
+
+include 'page_header.php';
 ?>
-<!DOCTYPE html>
-<html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transactie Bewerken - Boekhouden</title>
-    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Relation add link styling */
-        .relation-add-link {
-            color: #3498db;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-        
-        .relation-add-link:hover {
-            color: var(--text-primary);
-            text-decoration: underline;
-        }
-        
-        .relation-add-link i {
-            margin-right: 3px;
-        }
-        
-        /* Profile dropdown styles */
-        .profile-dropdown {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .profile-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #3498db, #2c3e50);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.2rem;
-            cursor: pointer;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            transition: all 0.3s ease;
-        }
-        
-        .profile-icon:hover {
-            transform: scale(1.05);
-            border-color: rgba(255, 255, 255, 0.6);
-            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
-        }
-        
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            right: 0;
-            top: 50px;
-            background-color: var(--bg-card);
-            min-width: 200px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            z-index: 1000;
-            overflow: hidden;
-        }
-        
-        .dropdown-content.show {
-            display: block;
-        }
-        
-        .dropdown-header {
-            padding: 15px;
-            background: linear-gradient(135deg, #2c3e50, #3498db);
-            color: white;
-        }
-        
-        .dropdown-header .user-name {
-            font-weight: 600;
-            font-size: 1rem;
-            margin-bottom: 3px;
-        }
-        
-        .dropdown-header .user-email {
-            font-size: 0.8rem;
-            opacity: 0.9;
-        }
-        
-        .dropdown-header .user-role {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            margin-top: 5px;
-        }
-        
-        .dropdown-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .dropdown-menu li {
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .dropdown-menu li:last-child {
-            border-bottom: none;
-        }
-        
-        .dropdown-menu a {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 15px;
-            color: var(--text-primary);
-            text-decoration: none;
-            transition: background-color 0.2s;
-        }
-        
-        .dropdown-menu a:hover {
-            background-color: var(--bg-table-stripe);
-        }
-        
-        .dropdown-menu a i {
-            width: 20px;
-            color: var(--text-secondary);
-        }
-        
-        .dropdown-menu .logout-link {
-            color: #e74c3c !important;
-        }
-        
-        .dropdown-menu .logout-link:hover {
-            background-color: rgba(231, 76, 60, 0.1);
-        }
-        
-        .dropdown-menu .logout-link i {
-            color: #e74c3c;
-        }
-        
-        .user-info-nav {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-left: auto;
-            color: white;
-            font-size: 0.9rem;
-            position: relative;
-        }
-    </style>
-    <?php require 'theme_init.php'; ?>
-</head>
-<body>
-    <div class="header">
-        <div class="header-logo-container">
-            <div class="logo">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
-                    <defs>
-                        <linearGradient id="header-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:#3498db;stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                    <rect x="5" y="5" width="50" height="50" rx="10" ry="10" fill="url(#header-gradient)" stroke="#2c3e50" stroke-width="1.5"/>
-                    <rect x="15" y="15" width="30" height="30" rx="3" ry="3" fill="white" opacity="0.9"/>
-                    <rect x="15" y="15" width="5" height="30" rx="1" ry="1" fill="#2c3e50"/>
-                    <line x1="25" y1="20" x2="40" y2="20" stroke="#3498db" stroke-width="1"/>
-                    <line x1="25" y1="25" x2="40" y2="25" stroke="#3498db" stroke-width="1"/>
-                    <line x1="25" y1="30" x2="40" y2="30" stroke="#3498db" stroke-width="1"/>
-                    <line x1="25" y1="35" x2="40" y2="35" stroke="#3498db" stroke-width="1"/>
-                    <line x1="25" y1="40" x2="40" y2="40" stroke="#3498db" stroke-width="1"/>
-                    <text x="32" y="38" text-anchor="middle" fill="#2c3e50" font-family="Arial, sans-serif" font-weight="bold" font-size="14">€</text>
-                    <text x="70" y="30" font-family="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" font-size="22" font-weight="600" fill="white">BOEK!N</text>
-                </svg>
-            </div>
-            <div class="header-text">
-                <h1>Transactie Bewerken</h1>
-                <p>Bewerk transactie #<?php echo $transaction['id']; ?> van <?php echo date('d-m-Y', strtotime($transaction['date'])); ?></p>
-            </div>
-        </div>
-    </div>
-
-    <nav class="nav-bar">
-        <ul class="nav-links">
-            <li><a href="../index.php">Overzicht</a></li>
-            <li><a href="add_income.php">Verkoop Boeken</a></li>
-            <li><a href="add_expense.php">Inkoop Boeken</a></li>
-            <li><a href="relations.php"><i class="fas fa-address-book"></i> Relaties</a></li>
-            <li><a href="profit_loss.php">Winst & Verlies</a></li>
-            <li><a href="btw_kwartaal.php">BTW Overzicht</a></li>
-            <li><a href="balans.php">Balans</a></li>
-            <?php if ($is_admin): ?>
-                <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
-            <?php endif; ?>
-        </ul>
-        <div class="user-info-nav">
-            <div class="profile-dropdown">
-                <?php
-                $user = get_current_user_data();
-                $user_initial = strtoupper(substr($user['full_name'] ?? $user['username'] ?? 'U', 0, 1));
-                $user_name = $user['full_name'] ?? $user['username'] ?? 'Gebruiker';
-                $user_email = $user['email'] ?? '';
-                $user_role = $user['user_type'] ?? 'gebruiker';
-                $role_display = ($user_role === 'administrator') ? 'Administrator' : 'Gebruiker';
-                ?>
-                <div class="profile-icon" id="profileIcon">
-                    <?php echo $user_initial; ?>
-                </div>
-                <div class="dropdown-content" id="profileDropdown">
-                    <div class="dropdown-header">
-                        <div class="user-name"><?php echo htmlspecialchars($user_name); ?></div>
-                        <?php if ($user_email): ?>
-                        <div class="user-email"><?php echo htmlspecialchars($user_email); ?></div>
-                        <?php endif; ?>
-                        <div class="user-role"><?php echo htmlspecialchars($role_display); ?></div>
-                    </div>
-                    <ul class="dropdown-menu">
-                        <li><a href="../index.php"><i class="fas fa-home"></i> Dashboard</a></li>
-                        <?php if ($is_admin): ?>
-                        <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a></li>
-                        <li><a href="admin_users.php"><i class="fas fa-users"></i> Gebruikersbeheer</a></li>
-                        <?php endif; ?>
-                        <li><button class="theme-toggle" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i> <span id="themeLabel">Donker thema</span></button></li>
-                        <li><a href="../logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </nav>
-
     <main class="main-content">
         <h2 class="section-title">Transactiegegevens Bewerken</h2>
-        
+
         <div class="alert alert-info">
-            <strong>Transactie ID:</strong> #<?php echo $transaction['id']; ?> | 
+            <strong>Transactie ID:</strong> #<?php echo $transaction['id']; ?> |
             <strong>Aangemaakt:</strong> <?php echo date('d-m-Y H:i', strtotime($transaction['created_at'])); ?>
         </div>
-        
+
         <form method="post" class="transaction-form" enctype="multipart/form-data">
             <div class="card">
                 <h3 class="card-title">Basisgegevens</h3>
-                
+
                 <div class="form-group">
                     <label for="date">Datum *</label>
-                    <input type="date" id="date" name="date" class="form-control" 
+                    <input type="date" id="date" name="date" class="form-control"
                            value="<?php echo $transaction['date']; ?>" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="description">Omschrijving *</label>
                     <input type="text" id="description" name="description" class="form-control"
                            value="<?php echo htmlspecialchars($transaction['description']); ?>" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="invoice_number">Factuurnummer (optioneel)</label>
                     <input type="text" id="invoice_number" name="invoice_number" class="form-control"
@@ -429,7 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                            placeholder="Bijv. FACT-2024-001, INV-12345" maxlength="50">
                     <small class="form-text">Voer het factuurnummer in voor betere administratie</small>
                 </div>
-                
+
                 <div class="form-group" id="debiteur-group" style="display: none;">
                     <label for="relation_id_debiteur">
                         <i class="fas fa-address-book"></i> Debiteur (Klant)
@@ -451,7 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </a>
                     </small>
                 </div>
-                
+
                 <div class="form-group" id="crediteur-group" style="display: none;">
                     <label for="relation_id_crediteur">
                         <i class="fas fa-address-book"></i> Crediteur (Leverancier)
@@ -473,14 +263,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </a>
                     </small>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="amount">Bedrag (€) *</label>
                     <input type="number" id="amount" name="amount" class="form-control"
                            step="0.01" value="<?php echo $transaction['amount']; ?>" required>
                     <small class="form-text">Positief voor normale transacties, negatief voor creditnota's</small>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="type">Type *</label>
                     <select id="type" name="type" class="form-control" required>
@@ -488,13 +278,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <option value="uitgave" <?php echo $transaction['type'] == 'uitgave' ? 'selected' : ''; ?>>Uitgave</option>
                     </select>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="category_id">Categorie</label>
                     <select id="category_id" name="category_id" class="form-control">
                         <option value="">Geen categorie</option>
                         <?php foreach ($categories as $cat): ?>
-                        <option value="<?php echo $cat['id']; ?>" 
+                        <option value="<?php echo $cat['id']; ?>"
                             <?php echo $transaction['category_id'] == $cat['id'] ? 'selected' : ''; ?>>
                             <?php echo htmlspecialchars($cat['name']); ?>
                         </option>
@@ -535,7 +325,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <div class="card">
                 <h3 class="card-title">BTW Instellingen</h3>
-                
+
                 <div class="form-group">
                     <label for="vat_percentage">BTW Percentage</label>
                     <select id="vat_percentage" name="vat_percentage" class="form-control">
@@ -549,24 +339,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </select>
                     <small class="form-text">BTW tarieven gelden voor de geselecteerde datum</small>
                 </div>
-                
+
                 <div class="checkbox-group">
-                    <input type="checkbox" id="vat_included" name="vat_included" value="1" 
+                    <input type="checkbox" id="vat_included" name="vat_included" value="1"
                         <?php echo (isset($transaction['vat_included']) && $transaction['vat_included']) ? 'checked' : ''; ?>>
                     <label for="vat_included">Bedrag is inclusief BTW</label>
                 </div>
-                
+
                 <div class="checkbox-group">
-                    <input type="checkbox" id="vat_deductible" name="vat_deductible" value="1" 
+                    <input type="checkbox" id="vat_deductible" name="vat_deductible" value="1"
                         <?php echo (isset($transaction['vat_deductible']) && $transaction['vat_deductible']) ? 'checked' : ''; ?>>
                     <label for="vat_deductible">BTW is aftrekbaar (alleen voor uitgaven)</label>
                 </div>
-                
+
                 <div id="vatCalculationDisplay" class="alert alert-info" style="display: none;">
                     <strong>BTW berekening:</strong> <span id="vatCalculationText">Voer bedrag en BTW percentage in</span>
                 </div>
             </div>
-            
+
             <div class="btn-group">
                 <button type="submit" class="btn btn-primary btn-lg">
                     Wijzigingen Opslaan
@@ -587,7 +377,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </a>
             </div>
         </form>
-        
+
         <div class="card" style="margin-top: 2rem;">
             <h3 class="card-title">Transactie Geschiedenis</h3>
             <p><strong>Laatst gewijzigd:</strong> <?php echo date('d-m-Y H:i', strtotime($transaction['created_at'])); ?></p>
@@ -615,7 +405,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             const crediteurGroup = document.getElementById('crediteur-group');
             const debiteurSelect = document.getElementById('relation_id_debiteur');
             const crediteurSelect = document.getElementById('relation_id_crediteur');
-            
+
             // Update relation dropdown visibility based on transaction type
             function updateRelationDropdown() {
                 if (typeSelect.value === 'inkomst') {
@@ -634,7 +424,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     crediteurSelect.disabled = false;
                 }
             }
-            
+
             // Update VAT deductible based on transaction type
             function updateVatDeductible() {
                 if (typeSelect.value === 'uitgave') {
@@ -646,36 +436,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     vatDeductibleLabel.style.opacity = '0.6';
                 }
             }
-            
+
             // Update VAT rates based on selected date
             async function updateVatRatesForDate(selectedDate) {
                 try {
                     const response = await fetch(`get_vat_rates.php?date=${selectedDate}`);
                     if (!response.ok) throw new Error('Network response was not ok');
-                    
+
                     const rates = await response.json();
-                    
+
                     // Get current selected rate
                     const currentRate = vatPercentageSelect.value;
-                    
+
                     // Clear existing options
                     vatPercentageSelect.innerHTML = '';
-                    
+
                     // Add new options
                     rates.forEach(rate => {
                         const option = document.createElement('option');
                         option.value = rate.rate;
                         option.textContent = `${rate.rate}% (${rate.name})`;
                         option.title = rate.description;
-                        
+
                         // Select the rate that matches current selection, or first rate
                         if (rate.rate == currentRate || (rates.length > 0 && rates[0].rate == rate.rate && currentRate === '')) {
                             option.selected = true;
                         }
-                        
+
                         vatPercentageSelect.appendChild(option);
                     });
-                    
+
                     // Show notification if rates changed
                     if (rates.length > 0) {
                         console.log(`VAT rates updated for ${selectedDate}`);
@@ -685,7 +475,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     // Keep existing rates if fetch fails
                 }
             }
-            
+
             // Calculate VAT on the fly and update display
             function updateVatCalculation() {
                 const amount = parseFloat(amountInput.value) || 0;
@@ -693,11 +483,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 const vatIncluded = vatIncludedCheckbox.checked;
                 const vatCalculationDisplay = document.getElementById('vatCalculationDisplay');
                 const vatCalculationText = document.getElementById('vatCalculationText');
-                
+
                 if (vatRate > 0 && amount !== 0) {
                     let vatAmount, baseAmount, totalAmount;
                     let calculationText = '';
-                    
+
                     if (vatIncluded) {
                         baseAmount = amount / (1 + (vatRate / 100));
                         vatAmount = amount - baseAmount;
@@ -707,14 +497,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         totalAmount = amount + vatAmount;
                         calculationText = `€${amount.toFixed(2)} exclusief ${vatRate}% BTW = €${totalAmount.toFixed(2)} totaal (€${amount.toFixed(2)} + €${vatAmount.toFixed(2)} BTW)`;
                     }
-                    
+
                     vatCalculationText.textContent = calculationText;
                     vatCalculationDisplay.style.display = 'block';
                 } else {
                     vatCalculationDisplay.style.display = 'none';
                 }
             }
-            
+
             // Event listeners
             typeSelect.addEventListener('change', function() {
                 updateVatDeductible();
@@ -726,47 +516,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             amountInput.addEventListener('input', updateVatCalculation);
             vatPercentageSelect.addEventListener('change', updateVatCalculation);
             vatIncludedCheckbox.addEventListener('change', updateVatCalculation);
-            
+
             // Initial calls
             updateVatDeductible();
             updateRelationDropdown();
             updateVatCalculation();
-            
+
             // Also trigger calculation on page load if there's already VAT data
             if (parseFloat(vatPercentageSelect.value) > 0 && parseFloat(amountInput.value) !== 0) {
                 updateVatCalculation();
             }
-            
-            // Profile dropdown functionality
-            const profileIcon = document.getElementById('profileIcon');
-            const profileDropdown = document.getElementById('profileDropdown');
-            
-            if (profileIcon && profileDropdown) {
-                // Toggle dropdown on click
-                profileIcon.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    profileDropdown.classList.toggle('show');
-                });
-                
-                // Close dropdown when clicking outside
-                document.addEventListener('click', function(e) {
-                    if (!profileIcon.contains(e.target) && !profileDropdown.contains(e.target)) {
-                        profileDropdown.classList.remove('show');
-                    }
-                });
-                
-                // Close dropdown when clicking on a link inside it
-                const dropdownLinks = profileDropdown.querySelectorAll('a');
-                dropdownLinks.forEach(link => {
-                    link.addEventListener('click', function() {
-                        profileDropdown.classList.remove('show');
-                    });
-                });
-            }
         });
     </script>
-    
-    <footer style="text-align: center; padding: 20px; margin-top: 40px; color: #666; font-size: 12px; border-top: 1px solid #eee;">
+
+    <footer style="text-align: center; padding: 20px; margin-top: 40px; color: var(--text-secondary); font-size: 12px; border-top: 1px solid var(--border-color);">
         powered by P. Theijssen
     </footer>
 <?php require 'theme_toggle.php'; ?>
