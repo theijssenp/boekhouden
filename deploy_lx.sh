@@ -27,9 +27,20 @@ rsync -a --exclude='config.php' "$SRC/" "$DEST/"
 chown -R www-data:www-data "$DEST"
 
 # Database migraties - haal credentials uit config.php
-DB_USER=$(php -r "require '$DEST/php/config.php'; echo DB_USER;")
-DB_PASS=$(php -r "require '$DEST/php/config.php'; echo DB_PASS;")
-DB_NAME=$(php -r "require '$DEST/php/config.php'; echo DB_NAME;")
+DB_USER=$(php -r "require '$DEST/php/config.php'; echo DB_USER;" 2>/dev/null)
+DB_PASS=$(php -r "require '$DEST/php/config.php'; echo DB_PASS;" 2>/dev/null)
+DB_NAME=$(php -r "require '$DEST/php/config.php'; echo DB_NAME;" 2>/dev/null)
+
+# Fallback: grep uit config.php als PHP faalt
+if [ -z "$DB_USER" ]; then
+    DB_USER=$(grep "define('DB_USER'" "$DEST/php/config.php" | sed "s/.*'DB_USER', *'\([^']*\)'.*/\1/")
+fi
+if [ -z "$DB_PASS" ]; then
+    DB_PASS=$(grep "define('DB_PASS'" "$DEST/php/config.php" | sed "s/.*'DB_PASS', *'\([^']*\)'.*/\1/")
+fi
+if [ -z "$DB_NAME" ]; then
+    DB_NAME=$(grep "define('DB_NAME'" "$DEST/php/config.php" | sed "s/.*'DB_NAME', *'\([^']*\)'.*/\1/")
+fi
 
 for migration in "$SRC"/sql/migration_*.sql; do
     [ -f "$migration" ] || continue
