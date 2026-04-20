@@ -591,11 +591,11 @@ function get_activity_icon($action_type) {
 }
 
 .welcome-message {
-    background: #e3f2fd;
+    background: var(--bg-table-stripe);
     border-radius: 8px;
     padding: 15px 20px;
     margin: 20px 0;
-    border-left: 4px solid #3498db;
+    border-left: 4px solid var(--secondary-color);
 }
 
 .welcome-message p {
