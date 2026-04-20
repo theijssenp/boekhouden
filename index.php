@@ -185,7 +185,7 @@ function sort_indicator($column, $current_column, $current_order) {
             align-items: center;
             gap: 10px;
             margin-left: auto;
-            color: white;
+            color: var(--text-inverse);
             font-size: 0.9rem;
             position: relative;
         }
@@ -196,7 +196,7 @@ function sort_indicator($column, $current_column, $current_order) {
         
         .badge-admin {
             background: #ff6b6b;
-            color: white;
+            color: var(--text-inverse);
             padding: 2px 8px;
             border-radius: 12px;
             font-size: 0.75rem;
@@ -221,8 +221,8 @@ function sort_indicator($column, $current_column, $current_order) {
         .profile-icon {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #3498db, #2c3e50);
-            color: white;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: var(--text-inverse);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -245,7 +245,7 @@ function sort_indicator($column, $current_column, $current_order) {
             position: absolute;
             right: 0;
             top: 50px;
-            background-color: white;
+            background-color: var(--bg-dropdown);
             min-width: 200px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.1);
             border-radius: 8px;
@@ -259,8 +259,8 @@ function sort_indicator($column, $current_column, $current_order) {
         
         .dropdown-header {
             padding: 15px;
-            background: linear-gradient(135deg, #2c3e50, #3498db);
-            color: white;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--text-inverse);
         }
         
         .dropdown-header .user-name {
@@ -290,7 +290,7 @@ function sort_indicator($column, $current_column, $current_order) {
         }
         
         .dropdown-menu li {
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--border-color);
         }
         
         .dropdown-menu li:last-child {
@@ -302,22 +302,22 @@ function sort_indicator($column, $current_column, $current_order) {
             align-items: center;
             gap: 10px;
             padding: 12px 15px;
-            color: #333;
+            color: var(--text-primary);
             text-decoration: none;
             transition: background-color 0.2s;
         }
         
         .dropdown-menu a:hover {
-            background-color: #f8f9fa;
+            background-color: var(--bg-hover);
         }
         
         .dropdown-menu a i {
             width: 20px;
-            color: #7f8c8d;
+            color: var(--text-secondary);
         }
         
         .dropdown-menu .logout-link {
-            color: #e74c3c !important;
+            color: var(--danger-color) !important;
         }
         
         .dropdown-menu .logout-link:hover {
@@ -325,9 +325,10 @@ function sort_indicator($column, $current_column, $current_order) {
         }
         
         .dropdown-menu .logout-link i {
-            color: #e74c3c;
+            color: var(--danger-color);
         }
     </style>
+    <?php require 'php/theme_init.php'; ?>
 </head>
 <body>
     <div class="header">
@@ -399,6 +400,7 @@ function sort_indicator($column, $current_column, $current_order) {
                         <li><a href="php/admin_dashboard.php"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a></li>
                         <li><a href="php/admin_users.php"><i class="fas fa-users"></i> Gebruikersbeheer</a></li>
                         <?php endif; ?>
+                        <li><button class="theme-toggle" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i> <span id="themeLabel">Donker thema</span></button></li>
                         <li><a href="logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
                     </ul>
                 </div>
@@ -536,7 +538,7 @@ function sort_indicator($column, $current_column, $current_order) {
                                     <?php echo htmlspecialchars($t['username']); ?>
                                 </span>
                             <?php else: ?>
-                                <span class="neutral" style="font-style: italic; color: #666;">-</span>
+                                <span class="neutral" style="font-style: italic; color: var(--text-secondary);">-</span>
                             <?php endif; ?>
                         </td>
                         <?php endif; ?>
@@ -547,19 +549,19 @@ function sort_indicator($column, $current_column, $current_order) {
                                 <?php echo htmlspecialchars($t['invoice_number']); ?>
                             </span>
                             <?php else: ?>
-                            <span class="neutral" style="font-style: italic; color: #666;">-</span>
+                            <span class="neutral" style="font-style: italic; color: var(--text-secondary);">-</span>
                             <?php endif; ?>
                         </td>
                         <td>
                             <?php if (!empty($t['relation_name'])): ?>
                             <a href="php/relations.php?id=<?php echo $t['relation_id']; ?>"
                                title="<?php echo htmlspecialchars($t['relation_code']); ?> - Klik voor details"
-                               style="text-decoration: none; color: #3498db;">
+                               style="text-decoration: none; color: var(--secondary-color);">
                                 <i class="fas fa-address-book" style="margin-right: 5px;"></i>
                                 <?php echo htmlspecialchars($t['relation_name']); ?>
                             </a>
                             <?php else: ?>
-                            <span class="neutral" style="font-style: italic; color: #666;">
+                            <span class="neutral" style="font-style: italic; color: var(--text-secondary);">
                                 <?php echo $t['type'] == 'inkomst' ? 'Diverse Klanten' : 'Diverse Leveranciers'; ?>
                             </span>
                             <?php endif; ?>
@@ -726,10 +728,51 @@ function sort_indicator($column, $current_column, $current_order) {
                 });
             }
         });
+
+        // Theme toggle functionality
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            const label = document.getElementById('themeLabel');
+            const isDark = html.getAttribute('data-theme') === 'dark';
+
+            if (isDark) {
+                html.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                if (icon) icon.className = 'fas fa-moon';
+                if (label) label.textContent = 'Donker thema';
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                if (icon) icon.className = 'fas fa-sun';
+                if (label) label.textContent = 'Licht thema';
+            }
+        }
+
+        // Initialize theme from localStorage or system preference
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved) {
+                document.documentElement.setAttribute('data-theme', saved);
+                if (saved === 'dark') {
+                    const icon = document.getElementById('themeIcon');
+                    const label = document.getElementById('themeLabel');
+                    if (icon) icon.className = 'fas fa-sun';
+                    if (label) label.textContent = 'Licht thema';
+                }
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                const icon = document.getElementById('themeIcon');
+                const label = document.getElementById('themeLabel');
+                if (icon) icon.className = 'fas fa-sun';
+                if (label) label.textContent = 'Licht thema';
+            }
+        })();
     </script>
     
-    <footer style="text-align: center; padding: 20px; margin-top: 40px; color: #666; font-size: 12px; border-top: 1px solid #eee;">
+    <footer style="text-align: center; padding: 20px; margin-top: 40px; color: var(--text-secondary); font-size: 12px; border-top: 1px solid var(--border-color);">
         powered by P. Theijssen
     </footer>
+<?php require 'php/theme_toggle.php'; ?>
 </body>
 </html>

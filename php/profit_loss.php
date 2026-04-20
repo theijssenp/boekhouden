@@ -280,8 +280,8 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
         .profile-icon {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #3498db, #2c3e50);
-            color: white;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: var(--text-inverse);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -304,7 +304,7 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
             position: absolute;
             right: 0;
             top: 50px;
-            background-color: white;
+            background-color: var(--text-inverse);
             min-width: 200px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.1);
             border-radius: 8px;
@@ -318,8 +318,8 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         .dropdown-header {
             padding: 15px;
-            background: linear-gradient(135deg, #2c3e50, #3498db);
-            color: white;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--text-inverse);
         }
         
         .dropdown-header .user-name {
@@ -349,7 +349,7 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
         
         .dropdown-menu li {
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--border-color);
         }
         
         .dropdown-menu li:last-child {
@@ -361,22 +361,22 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
             align-items: center;
             gap: 10px;
             padding: 12px 15px;
-            color: #333;
+            color: var(--text-primary);
             text-decoration: none;
             transition: background-color 0.2s;
         }
         
         .dropdown-menu a:hover {
-            background-color: #f8f9fa;
+            background-color: var(--bg-hover);
         }
         
         .dropdown-menu a i {
             width: 20px;
-            color: #7f8c8d;
+            color: var(--text-secondary);
         }
         
         .dropdown-menu .logout-link {
-            color: #e74c3c !important;
+            color: var(--danger-color) !important;
         }
         
         .dropdown-menu .logout-link:hover {
@@ -384,7 +384,7 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
         
         .dropdown-menu .logout-link i {
-            color: #e74c3c;
+            color: var(--danger-color);
         }
         
         .user-info-nav {
@@ -392,11 +392,12 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
             align-items: center;
             gap: 10px;
             margin-left: auto;
-            color: white;
+            color: var(--text-inverse);
             font-size: 0.9rem;
             position: relative;
         }
     </style>
+    <?php require 'theme_init.php'; ?>
 </head>
 <body>
     <div class="header">
@@ -405,8 +406,8 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
                     <defs>
                         <linearGradient id="header-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:#3498db;stop-opacity:1" />
+                            <stop offset="0%" style="stop-color:var(--primary-color);stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:var(--secondary-color);stop-opacity:1" />
                         </linearGradient>
                     </defs>
                     <rect x="5" y="5" width="50" height="50" rx="10" ry="10" fill="url(#header-gradient)" stroke="#2c3e50" stroke-width="1.5"/>
@@ -468,6 +469,7 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a></li>
                         <li><a href="admin_users.php"><i class="fas fa-users"></i> Gebruikersbeheer</a></li>
                         <?php endif; ?>
+                        <li><button class="theme-toggle" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i> <span id="themeLabel">Donker thema</span></button></li>
                         <li><a href="../logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
                     </ul>
                 </div>
@@ -507,9 +509,9 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <p class="neutral">Alle uitgaven in <?php echo $year; ?></p>
             </div>
             
-            <div class="card" style="grid-column: span 2; background: linear-gradient(135deg, #2c3e50, #3498db); color: white;">
-                <h3 class="card-title" style="color: white;">Jaarresultaat</h3>
-                <div class="amount" style="font-size: 2.5rem; color: white;">
+            <div class="card" style="grid-column: span 2; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: var(--text-inverse);">
+                <h3 class="card-title" style="color: var(--text-inverse);">Jaarresultaat</h3>
+                <div class="amount" style="font-size: 2.5rem; color: var(--text-inverse);">
                     €<?php echo number_format($profit, 2); ?>
                 </div>
                 <p style="font-size: 1.2rem; margin-top: 10px;">
@@ -554,7 +556,7 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </td>
                         </tr>
                         <?php endforeach; ?>
-                        <tr style="background-color: #f8f9fa; font-weight: bold;">
+                        <tr style="background-color: var(--bg-table-stripe); font-weight: bold;">
                             <td><strong>Totaal <?php echo $year; ?></strong></td>
                             <td class="positive">€<?php echo number_format($totalIncome, 2); ?></td>
                             <td class="negative">€<?php echo number_format($totalExpenses, 2); ?></td>
@@ -750,8 +752,9 @@ $categoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
         });
     </script>
     
-    <footer style="text-align: center; padding: 20px; margin-top: 40px; color: #666; font-size: 12px; border-top: 1px solid #eee;">
+    <footer style="text-align: center; padding: 20px; margin-top: 40px; color: var(--text-secondary); font-size: 12px; border-top: 1px solid var(--border-color);">
         powered by P. Theijssen
     </footer>
+<?php require 'theme_toggle.php'; ?>
 </body>
 </html>

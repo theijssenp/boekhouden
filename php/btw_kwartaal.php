@@ -632,8 +632,8 @@ if ($vatColumnsExist) {
         .profile-icon {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #3498db, #2c3e50);
-            color: white;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: var(--text-inverse);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -656,7 +656,7 @@ if ($vatColumnsExist) {
             position: absolute;
             right: 0;
             top: 50px;
-            background-color: white;
+            background-color: var(--text-inverse);
             min-width: 200px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.1);
             border-radius: 8px;
@@ -670,8 +670,8 @@ if ($vatColumnsExist) {
         
         .dropdown-header {
             padding: 15px;
-            background: linear-gradient(135deg, #2c3e50, #3498db);
-            color: white;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--text-inverse);
         }
         
         .dropdown-header .user-name {
@@ -701,7 +701,7 @@ if ($vatColumnsExist) {
         }
         
         .dropdown-menu li {
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--border-color);
         }
         
         .dropdown-menu li:last-child {
@@ -713,22 +713,22 @@ if ($vatColumnsExist) {
             align-items: center;
             gap: 10px;
             padding: 12px 15px;
-            color: #333;
+            color: var(--text-primary);
             text-decoration: none;
             transition: background-color 0.2s;
         }
         
         .dropdown-menu a:hover {
-            background-color: #f8f9fa;
+            background-color: var(--bg-table-stripe);
         }
         
         .dropdown-menu a i {
             width: 20px;
-            color: #7f8c8d;
+            color: var(--text-secondary);
         }
         
         .dropdown-menu .logout-link {
-            color: #e74c3c !important;
+            color: var(--danger-color) !important;
         }
         
         .dropdown-menu .logout-link:hover {
@@ -736,7 +736,7 @@ if ($vatColumnsExist) {
         }
         
         .dropdown-menu .logout-link i {
-            color: #e74c3c;
+            color: var(--danger-color);
         }
         
         .user-info-nav {
@@ -744,11 +744,12 @@ if ($vatColumnsExist) {
             align-items: center;
             gap: 10px;
             margin-left: auto;
-            color: white;
+            color: var(--text-inverse);
             font-size: 0.9rem;
             position: relative;
         }
     </style>
+    <?php require 'theme_init.php'; ?>
 </head>
 <body>
     <div class="header">
@@ -757,8 +758,8 @@ if ($vatColumnsExist) {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
                     <defs>
                         <linearGradient id="header-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:#3498db;stop-opacity:1" />
+                            <stop offset="0%" style="stop-color:var(--primary-color);stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:var(--secondary-color);stop-opacity:1" />
                         </linearGradient>
                     </defs>
                     <rect x="5" y="5" width="50" height="50" rx="10" ry="10" fill="url(#header-gradient)" stroke="#2c3e50" stroke-width="1.5"/>
@@ -820,6 +821,7 @@ if ($vatColumnsExist) {
                         <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a></li>
                         <li><a href="admin_users.php"><i class="fas fa-users"></i> Gebruikersbeheer</a></li>
                         <?php endif; ?>
+                        <li><button class="theme-toggle" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i> <span id="themeLabel">Donker thema</span></button></li>
                         <li><a href="../logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
                     </ul>
                 </div>
@@ -903,9 +905,9 @@ if ($vatColumnsExist) {
                 </p>
             </div>
             
-            <div class="card" style="grid-column: span 2; background: linear-gradient(135deg, #2c3e50, #3498db); color: white;">
-                <h3 class="card-title" style="color: white;">Netto BTW verschuldigd</h3>
-                <div class="amount" style="font-size: 2.5rem; color: white;">
+            <div class="card" style="grid-column: span 2; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: var(--text-inverse);">
+                <h3 class="card-title" style="color: var(--text-inverse);">Netto BTW verschuldigd</h3>
+                <div class="amount" style="font-size: 2.5rem; color: var(--text-inverse);">
                     €<?php echo number_format($vatSummary['net_vat'], 2); ?>
                 </div>
                 <p style="font-size: 1.2rem; margin-top: 10px;">
@@ -999,7 +1001,7 @@ if ($vatColumnsExist) {
                         $vatIncome = $vatDetailed['vat_income_by_rate'][$rate] ?? 0;
                         $vatExpense = $vatDetailed['vat_expense_by_rate'][$rate] ?? 0;
                     ?>
-                    <div class="card" style="background: #f8f9fa;">
+                    <div class="card" style="background: var(--gray-light);">
                         <h5 class="card-title"><?php echo $rate; ?>% Tarief</h5>
                         <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 0.5rem;">
                             <div>
@@ -1081,8 +1083,8 @@ if ($vatColumnsExist) {
             ?>
             
             <?php foreach ($monthlyByRate as $monthNum => $monthData): ?>
-            <div class="month-section" style="margin-bottom: 2rem; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1rem;">
-                <h4 style="margin-top: 0; color: #2c3e50;"><?php echo $monthData['name']; ?></h4>
+            <div class="month-section" style="margin-bottom: 2rem; border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem;">
+                <h4 style="margin-top: 0; color: var(--text-primary);"><?php echo $monthData['name']; ?></h4>
                 
                 <div class="table-container">
                     <table class="data-table" style="font-size: 0.9rem;">
@@ -1130,7 +1132,7 @@ if ($vatColumnsExist) {
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
-                        <tfoot style="background: #f8f9fa; font-weight: bold;">
+                        <tfoot style="background: var(--bg-table-stripe); font-weight: bold;">
                             <tr>
                                 <td><strong>Totaal <?php echo $monthData['name']; ?>:</strong></td>
                                 <td class="positive">€<?php echo number_format($monthTotalIncome, 2); ?></td>
@@ -1148,25 +1150,25 @@ if ($vatColumnsExist) {
                 
                 <!-- Monthly summary cards -->
                 <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 1rem;">
-                    <div class="card" style="background: #f8f9fa; padding: 0.75rem;">
+                    <div class="card" style="background: var(--gray-light); padding: 0.75rem;">
                         <small class="neutral">Totaal Inkomsten</small>
                         <div class="positive" style="font-size: 1.2rem;">€<?php echo number_format($monthTotalIncome, 2); ?></div>
                     </div>
-                    <div class="card" style="background: #f8f9fa; padding: 0.75rem;">
+                    <div class="card" style="background: var(--gray-light); padding: 0.75rem;">
                         <small class="neutral">Totaal Uitgaven</small>
                         <div class="negative" style="font-size: 1.2rem;">€<?php echo number_format($monthTotalExpense, 2); ?></div>
                     </div>
-                    <div class="card" style="background: #f8f9fa; padding: 0.75rem;">
+                    <div class="card" style="background: var(--gray-light); padding: 0.75rem;">
                         <small class="neutral">BTW over Inkomsten</small>
                         <div class="negative" style="font-size: 1.2rem;">€<?php echo number_format($monthTotalVatIncome, 2); ?></div>
                     </div>
-                    <div class="card" style="background: #f8f9fa; padding: 0.75rem;">
+                    <div class="card" style="background: var(--gray-light); padding: 0.75rem;">
                         <small class="neutral">BTW over Uitgaven</small>
                         <div class="positive" style="font-size: 1.2rem;">€<?php echo number_format($monthTotalVatExpense, 2); ?></div>
                     </div>
-                    <div class="card" style="background: linear-gradient(135deg, #2c3e50, #3498db); color: white; padding: 0.75rem; grid-column: span 2;">
+                    <div class="card" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: var(--text-inverse); padding: 0.75rem; grid-column: span 2;">
                         <small style="color: rgba(255,255,255,0.9);">Netto BTW <?php echo $monthData['name']; ?></small>
-                        <div style="font-size: 1.5rem; color: white;">
+                        <div style="font-size: 1.5rem; color: var(--text-inverse);">
                             €<?php echo number_format($monthTotalVatIncome - $monthTotalVatExpense, 2); ?>
                         </div>
                     </div>
@@ -1175,8 +1177,8 @@ if ($vatColumnsExist) {
             <?php endforeach; ?>
             
             <!-- Quarterly summary from monthly data -->
-            <div class="card" style="background: linear-gradient(135deg, #34495e, #2c3e50); color: white; margin-top: 2rem;">
-                <h4 style="color: white;">Kwartaal Samenvatting (op basis van maandelijkse data)</h4>
+            <div class="card" style="background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); color: var(--text-inverse); margin-top: 2rem;">
+                <h4 style="color: var(--text-inverse);">Kwartaal Samenvatting (op basis van maandelijkse data)</h4>
                 <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
                     <?php
                     $quarterTotalIncome = 0;
@@ -1196,24 +1198,24 @@ if ($vatColumnsExist) {
                     $quarterNetVat = $quarterTotalVatIncome - $quarterTotalVatExpense;
                     ?>
                     <div style="padding: 1rem;">
-                        <small>Totaal Inkomsten Kwartaal</small>
+                        <small style="color: rgba(255,255,255,0.9);">Totaal Inkomsten Kwartaal</small>
                         <div style="font-size: 1.5rem; color: #a3e4d7;">€<?php echo number_format($quarterTotalIncome, 2); ?></div>
                     </div>
                     <div style="padding: 1rem;">
-                        <small>Totaal Uitgaven Kwartaal</small>
+                        <small style="color: rgba(255,255,255,0.9);">Totaal Uitgaven Kwartaal</small>
                         <div style="font-size: 1.5rem; color: #f5b7b1;">€<?php echo number_format($quarterTotalExpense, 2); ?></div>
                     </div>
                     <div style="padding: 1rem;">
-                        <small>BTW over Inkomsten</small>
+                        <small style="color: rgba(255,255,255,0.9);">BTW over Inkomsten</small>
                         <div style="font-size: 1.5rem; color: #f5b7b1;">€<?php echo number_format($quarterTotalVatIncome, 2); ?></div>
                     </div>
                     <div style="padding: 1rem;">
-                        <small>BTW over Uitgaven</small>
+                        <small style="color: rgba(255,255,255,0.9);">BTW over Uitgaven</small>
                         <div style="font-size: 1.5rem; color: #a3e4d7;">€<?php echo number_format($quarterTotalVatExpense, 2); ?></div>
                     </div>
                     <div style="padding: 1rem; grid-column: span 2; text-align: center;">
-                        <small>Netto BTW Kwartaal</small>
-                        <div style="font-size: 2rem; color: white;">
+                        <small style="color: rgba(255,255,255,0.9);">Netto BTW Kwartaal</small>
+                        <div style="font-size: 2rem; color: var(--text-inverse);">
                             €<?php echo number_format($quarterNetVat, 2); ?>
                         </div>
                         <div style="margin-top: 0.5rem;">
@@ -1280,7 +1282,7 @@ if ($vatColumnsExist) {
                         <?php endforeach; ?>
                     </tbody>
                     <tfoot>
-                        <tr style="background: #f8f9fa; font-weight: bold;">
+                        <tr style="background: var(--gray-light); font-weight: bold;">
                             <td>Totaal Kwartaal:</td>
                             <td class="negative">€<?php echo number_format($vatSummary['vat_on_income'], 2); ?></td>
                             <td class="positive">€<?php echo number_format($vatSummary['vat_on_expenses'], 2); ?></td>
@@ -1302,7 +1304,7 @@ if ($vatColumnsExist) {
             <!-- Monthly VAT Chart (simplified) -->
             <div style="margin-top: 2rem;">
                 <h4>BTW Ontwikkeling per Maand</h4>
-                <div style="background: white; border-radius: 8px; padding: 1rem; border: 1px solid #e0e0e0;">
+                <div style="background: var(--bg-card); border-radius: 8px; padding: 1rem; border: 1px solid var(--border-color);">
                     <div style="display: flex; height: 200px; align-items: flex-end; gap: 10px; padding: 0 1rem;">
                         <?php foreach ($monthlySummary as $monthRow):
                             $month = (int)$monthRow['month'];
@@ -1569,8 +1571,9 @@ if ($vatColumnsExist) {
         });
     </script>
     
-    <footer style="text-align: center; padding: 20px; margin-top: 40px; color: #666; font-size: 12px; border-top: 1px solid #eee;">
+    <footer style="text-align: center; padding: 20px; margin-top: 40px; color: var(--text-secondary); font-size: 12px; border-top: 1px solid var(--border-color);">
         powered by P. Theijssen
     </footer>
+<?php require 'theme_toggle.php'; ?>
 </body>
 </html>

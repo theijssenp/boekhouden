@@ -131,11 +131,11 @@ $show_nav = true;
             border-bottom: 1px solid #ddd;
         }
         .vat-rates-table th {
-            background-color: #f8f9fa;
+            background-color: var(--bg-table-stripe);
             font-weight: 600;
         }
         .vat-rates-table tr:hover {
-            background-color: #f8f9fa;
+            background-color: var(--bg-table-stripe);
         }
         .active-badge {
             display: inline-block;
@@ -163,7 +163,7 @@ $show_nav = true;
             margin-bottom: 2rem;
         }
         .form-card {
-            background: white;
+            background: var(--bg-card);
             border-radius: 8px;
             padding: 1.5rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -278,7 +278,7 @@ $show_nav = true;
         .section-title {
             margin-top: 0;
             margin-bottom: 1rem;
-            color: #2c3e50;
+            color: var(--text-primary);
             font-size: 1.25rem;
         }
         .neutral {
@@ -297,7 +297,7 @@ $show_nav = true;
             border-color: #bee5eb;
         }
         .card {
-            background: white;
+            background: var(--bg-card);
             border-radius: 8px;
             padding: 1.5rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -307,7 +307,7 @@ $show_nav = true;
         .card-title {
             margin-top: 0;
             margin-bottom: 1rem;
-            color: #2c3e50;
+            color: var(--text-primary);
         }
     </style>
 
@@ -321,7 +321,7 @@ $show_nav = true;
         <div class="message info">
             <strong>Let op:</strong> De BTW-tarieven tabel bestaat nog niet in de database.
             <p>Voer eerst het migratiescript uit om de tabel aan te maken:</p>
-            <pre style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin: 1rem 0;">
+            <pre style="background: var(--bg-table-stripe); padding: 1rem; border-radius: 4px; margin: 1rem 0;">
 mysql -u root -p boekhouden < migrate_vat_rates.sql</pre>
             <p>Of voer het SQL-script handmatig uit vanuit <code>schema_vat_rates.sql</code>.</p>
         </div>

@@ -184,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         .relation-add-link:hover {
-            color: #2c3e50;
+            color: var(--text-primary);
             text-decoration: underline;
         }
         
@@ -225,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             position: absolute;
             right: 0;
             top: 50px;
-            background-color: white;
+            background-color: var(--bg-card);
             min-width: 200px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.1);
             border-radius: 8px;
@@ -270,7 +270,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         .dropdown-menu li {
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--border-color);
         }
         
         .dropdown-menu li:last-child {
@@ -282,18 +282,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             align-items: center;
             gap: 10px;
             padding: 12px 15px;
-            color: #333;
+            color: var(--text-primary);
             text-decoration: none;
             transition: background-color 0.2s;
         }
         
         .dropdown-menu a:hover {
-            background-color: #f8f9fa;
+            background-color: var(--bg-table-stripe);
         }
         
         .dropdown-menu a i {
             width: 20px;
-            color: #7f8c8d;
+            color: var(--text-secondary);
         }
         
         .dropdown-menu .logout-link {
@@ -318,6 +318,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             position: relative;
         }
     </style>
+    <?php require 'theme_init.php'; ?>
 </head>
 <body>
     <div class="header">
@@ -389,6 +390,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a></li>
                         <li><a href="admin_users.php"><i class="fas fa-users"></i> Gebruikersbeheer</a></li>
                         <?php endif; ?>
+                        <li><button class="theme-toggle" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i> <span id="themeLabel">Donker thema</span></button></li>
                         <li><a href="../logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
                     </ul>
                 </div>
@@ -767,5 +769,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <footer style="text-align: center; padding: 20px; margin-top: 40px; color: #666; font-size: 12px; border-top: 1px solid #eee;">
         powered by P. Theijssen
     </footer>
+<?php require 'theme_toggle.php'; ?>
 </body>
 </html>

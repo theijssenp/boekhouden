@@ -290,12 +290,12 @@ include 'header.php';
         vertical-align: top;
     }
     .audit-log-table th {
-        background-color: #f8f9fa;
+        background-color: var(--bg-table-stripe);
         font-weight: 600;
         color: #495057;
     }
     .audit-log-table tr:hover {
-        background-color: #f8f9fa;
+        background-color: var(--bg-table-stripe);
     }
     .action-icon {
         font-size: 1.2rem;
@@ -303,7 +303,7 @@ include 'header.php';
     }
     .user-info {
         font-weight: 500;
-        color: #2c3e50;
+        color: var(--text-primary);
     }
     .user-type {
         display: inline-block;
@@ -350,7 +350,7 @@ include 'header.php';
         color: #3498db;
     }
     .pagination a:hover {
-        background-color: #f8f9fa;
+        background-color: var(--bg-table-stripe);
     }
     .pagination .current {
         background-color: #3498db;
@@ -363,7 +363,7 @@ include 'header.php';
         opacity: 0.6;
     }
     .stats-card {
-        background: white;
+        background: var(--bg-card);
         border-radius: 8px;
         padding: 1rem;
         margin-bottom: 1.5rem;
@@ -378,13 +378,13 @@ include 'header.php';
     .stat-item {
         text-align: center;
         padding: 1rem;
-        background: #f8f9fa;
+        background: var(--bg-table-stripe);
         border-radius: 6px;
     }
     .stat-value {
         font-size: 1.5rem;
         font-weight: 600;
-        color: #2c3e50;
+        color: var(--text-primary);
         margin-bottom: 0.25rem;
     }
     .stat-label {
@@ -392,7 +392,7 @@ include 'header.php';
         color: #6c757d;
     }
     .filter-bar {
-        background: white;
+        background: var(--bg-card);
         border-radius: 8px;
         padding: 1rem;
         margin-bottom: 1.5rem;

@@ -78,7 +78,7 @@ $transaction_count = $pdo->query("SELECT COUNT(*) as count FROM transactions")->
             margin: 2rem 0;
         }
         .data-card {
-            background: white;
+            background: var(--bg-card);
             border-radius: 8px;
             padding: 1.5rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -86,7 +86,7 @@ $transaction_count = $pdo->query("SELECT COUNT(*) as count FROM transactions")->
         }
         .data-card h3 {
             margin-top: 0;
-            color: #2c3e50;
+            color: var(--text-primary);
         }
         .data-card p {
             color: #666;
@@ -130,7 +130,7 @@ $transaction_count = $pdo->query("SELECT COUNT(*) as count FROM transactions")->
             margin: 2rem 0;
         }
         .stat-card {
-            background: #f8f9fa;
+            background: var(--bg-table-stripe);
             border-radius: 8px;
             padding: 1rem;
             text-align: center;
@@ -138,7 +138,7 @@ $transaction_count = $pdo->query("SELECT COUNT(*) as count FROM transactions")->
         .stat-value {
             font-size: 2rem;
             font-weight: bold;
-            color: #2c3e50;
+            color: var(--text-primary);
         }
         .stat-label {
             color: #666;

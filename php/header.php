@@ -21,12 +21,12 @@
             align-items: center;
             margin-bottom: 30px;
             padding-bottom: 15px;
-            border-bottom: 2px solid #e9ecef;
+            border-bottom: 2px solid var(--border-color);
         }
         
         .page-header h1 {
             margin: 0;
-            color: #2c3e50;
+            color: var(--text-primary);
         }
         
         .user-info {
@@ -38,8 +38,8 @@
         .user-avatar {
             width: 40px;
             height: 40px;
-            background: #3498db;
-            color: white;
+            background: var(--secondary-color);
+            color: var(--text-inverse);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -53,12 +53,12 @@
         
         .user-name {
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--text-primary);
         }
         
         .user-role {
             font-size: 12px;
-            color: #7f8c8d;
+            color: var(--text-secondary);
             text-transform: capitalize;
         }
         
@@ -69,7 +69,7 @@
         }
         
         .nav-links a {
-            color: #3498db;
+            color: var(--secondary-color);
             text-decoration: none;
             font-size: 14px;
         }
@@ -86,27 +86,27 @@
         }
         
         .alert-success {
-            color: #155724;
-            background-color: #d4edda;
-            border-color: #c3e6cb;
+            color: var(--success-color);
+            background-color: rgba(39, 174, 96, 0.1);
+            border-color: var(--success-color);
         }
-        
+
         .alert-error {
-            color: #721c24;
-            background-color: #f8d7da;
-            border-color: #f5c6cb;
+            color: var(--danger-color);
+            background-color: rgba(231, 76, 60, 0.1);
+            border-color: var(--danger-color);
         }
-        
+
         .alert-warning {
-            color: #856404;
-            background-color: #fff3cd;
-            border-color: #ffeaa7;
+            color: var(--warning-color);
+            background-color: rgba(243, 156, 18, 0.1);
+            border-color: var(--warning-color);
         }
-        
+
         .alert-info {
-            color: #0c5460;
-            background-color: #d1ecf1;
-            border-color: #bee5eb;
+            color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.1);
+            border-color: var(--secondary-color);
         }
         
         /* Profile dropdown styles */
@@ -118,8 +118,8 @@
         .profile-icon {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #3498db, #2c3e50);
-            color: white;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: var(--text-inverse);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -142,7 +142,7 @@
             position: absolute;
             right: 0;
             top: 50px;
-            background-color: white;
+            background-color: var(--text-inverse);
             min-width: 200px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.1);
             border-radius: 8px;
@@ -156,8 +156,8 @@
         
         .dropdown-header {
             padding: 15px;
-            background: linear-gradient(135deg, #2c3e50, #3498db);
-            color: white;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--text-inverse);
         }
         
         .dropdown-header .user-name {
@@ -187,7 +187,7 @@
         }
         
         .dropdown-menu li {
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--border-color);
         }
         
         .dropdown-menu li:last-child {
@@ -199,22 +199,22 @@
             align-items: center;
             gap: 10px;
             padding: 12px 15px;
-            color: #333;
+            color: var(--text-primary);
             text-decoration: none;
             transition: background-color 0.2s;
         }
         
         .dropdown-menu a:hover {
-            background-color: #f8f9fa;
+            background-color: var(--bg-hover);
         }
         
         .dropdown-menu a i {
             width: 20px;
-            color: #7f8c8d;
+            color: var(--text-secondary);
         }
         
         .dropdown-menu .logout-link {
-            color: #e74c3c !important;
+            color: var(--danger-color) !important;
         }
         
         .dropdown-menu .logout-link:hover {
@@ -222,7 +222,7 @@
         }
         
         .dropdown-menu .logout-link i {
-            color: #e74c3c;
+            color: var(--danger-color);
         }
         
         .user-info-nav {
@@ -230,7 +230,7 @@
             align-items: center;
             gap: 10px;
             margin-left: auto;
-            color: white;
+            color: var(--text-inverse);
             font-size: 0.9rem;
             position: relative;
         }
@@ -238,7 +238,7 @@
         /* Header styles */
         .header {
             background: linear-gradient(135deg, var(--primary-color, #2c3e50), var(--accent-color, #2980b9));
-            color: white;
+            color: var(--text-inverse);
             padding: 1.5rem;
             border-radius: var(--border-radius, 8px);
             margin-bottom: 2rem;
@@ -258,7 +258,7 @@
         
         /* Navigation styles */
         .nav-bar {
-            background-color: white;
+            background-color: var(--text-inverse);
             border-radius: var(--border-radius, 8px);
             padding: 1rem;
             margin-bottom: 2rem;
@@ -289,13 +289,13 @@
         
         .nav-links a:hover {
             background-color: var(--secondary-color, #3498db);
-            color: white;
+            color: var(--text-inverse);
             transform: translateY(-2px);
         }
         
         .nav-links a.active {
             background-color: var(--secondary-color, #3498db);
-            color: white;
+            color: var(--text-inverse);
         }
     </style>
 </head>
@@ -371,6 +371,7 @@
                         <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a></li>
                         <li><a href="admin_users.php"><i class="fas fa-users"></i> Gebruikersbeheer</a></li>
                         <?php endif; ?>
+                        <li><button class="theme-toggle" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i> <span id="themeLabel">Donker thema</span></button></li>
                         <li><a href="../logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Uitloggen</a></li>
                     </ul>
                 </div>

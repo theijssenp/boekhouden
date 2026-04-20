@@ -15,6 +15,43 @@
     --border-radius: 8px;
     --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     --transition: all 0.3s ease;
+    /* Theme variables */
+    --bg-body: #ecf0f1;
+    --bg-card: #ffffff;
+    --bg-input: #ffffff;
+    --bg-nav: #ffffff;
+    --bg-dropdown: #ffffff;
+    --bg-hover: #f1f1f1;
+    --bg-table-stripe: #f8f9fa;
+    --text-primary: #333333;
+    --text-secondary: #6c757d;
+    --text-inverse: #ffffff;
+    --border-color: #e9ecef;
+    --shadow-card: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+[data-theme="dark"] {
+    --primary-color: #1a252f;
+    --secondary-color: #5dade2;
+    --accent-color: #2471a3;
+    --light-color: #1a1a2e;
+    --dark-color: #ecf0f1;
+    --gray-light: #16213e;
+    --gray-medium: #2c3e50;
+    --gray-dark: #aab7b8;
+    --bg-body: #0f0f1a;
+    --bg-card: #1a1a2e;
+    --bg-input: #16213e;
+    --bg-nav: #1a1a2e;
+    --bg-dropdown: #16213e;
+    --bg-hover: #2c3e50;
+    --bg-table-stripe: #16213e;
+    --text-primary: #ecf0f1;
+    --text-secondary: #aab7b8;
+    --text-inverse: #0f0f1a;
+    --border-color: #2c3e50;
+    --shadow-card: 0 2px 4px rgba(0,0,0,0.3);
+    --box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
 
 /* Keyframe animaties voor betere UX */
@@ -78,8 +115,8 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
-    color: #333;
-    background-color: var(--light-color);
+    color: var(--text-primary);
+    background-color: var(--bg-body);
     padding: 20px;
     max-width: 1200px;
     margin: 0 auto;
@@ -88,7 +125,7 @@ body {
 /* Header and Navigation */
 .header {
     background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-    color: white;
+    color: var(--text-inverse);
     padding: 1.5rem;
     border-radius: var(--border-radius);
     margin-bottom: 2rem;
@@ -122,7 +159,7 @@ body {
     font-size: 2.2rem;
     margin-bottom: 0.5rem;
     font-weight: 600;
-    color: white;
+    color: var(--text-inverse);
 }
 
 .header p {
@@ -132,7 +169,7 @@ body {
 }
 
 .nav-bar {
-    background-color: white;
+    background-color: var(--bg-card);
     border-radius: var(--border-radius);
     padding: 1rem;
     margin-bottom: 2rem;
@@ -164,13 +201,13 @@ body {
 
 .nav-links a:hover {
     background-color: var(--secondary-color);
-    color: white;
+    color: var(--text-inverse);
     transform: translateY(-2px);
 }
 
 .nav-links a.active {
     background-color: var(--secondary-color);
-    color: white;
+    color: var(--text-inverse);
 }
 
 .user-info-nav {
@@ -178,14 +215,14 @@ body {
     align-items: center;
     gap: 10px;
     margin-left: auto;
-    color: white;
+    color: var(--text-inverse);
     font-size: 0.9rem;
     position: relative;
 }
 
 /* Main Content */
 .main-content {
-    background-color: white;
+    background-color: var(--bg-card);
     border-radius: var(--border-radius);
     padding: 2rem;
     box-shadow: var(--box-shadow);
@@ -216,10 +253,12 @@ body {
 .form-control {
     width: 100%;
     padding: 0.75rem 1rem;
-    border: 2px solid var(--gray-medium);
+    border: 2px solid var(--border-color);
     border-radius: var(--border-radius);
     font-size: 1rem;
     transition: var(--transition);
+    background-color: var(--bg-input);
+    color: var(--text-primary);
 }
 
 .form-control:focus {
@@ -271,7 +310,7 @@ body {
 
 .btn-primary {
     background-color: var(--secondary-color);
-    color: white;
+    color: var(--text-inverse);
 }
 
 .btn-primary:hover {
@@ -287,13 +326,13 @@ body {
 
 .btn-secondary:hover {
     background-color: var(--gray-dark);
-    color: white;
+    color: var(--text-inverse);
     transform: translateY(-2px);
 }
 
 .btn-success {
     background-color: var(--success-color);
-    color: white;
+    color: var(--text-inverse);
 }
 
 .btn-success:hover {
@@ -304,7 +343,7 @@ body {
 
 .btn-danger {
     background-color: var(--danger-color);
-    color: white;
+    color: var(--text-inverse);
 }
 
 .btn-danger:hover {
@@ -340,7 +379,7 @@ body {
 
 .data-table th {
     background-color: var(--primary-color);
-    color: white;
+    color: var(--text-inverse);
     padding: 1rem;
     text-align: left;
     font-weight: 600;
@@ -360,14 +399,14 @@ body {
 }
 
 .data-table tbody tr:hover {
-    background-color: rgba(52, 152, 219, 0.1);
+    background-color: var(--bg-hover);
     transform: scale(1.01);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Cards and Panels */
 .card {
-    background-color: white;
+    background-color: var(--bg-card);
     border-radius: var(--border-radius);
     padding: 1.5rem;
     margin-bottom: 1.5rem;
@@ -413,25 +452,25 @@ body {
 .alert-success {
     background-color: rgba(39, 174, 96, 0.1);
     border-color: var(--success-color);
-    color: #155724;
+    color: var(--success-color);
 }
 
 .alert-warning {
     background-color: rgba(243, 156, 18, 0.1);
     border-color: var(--warning-color);
-    color: #856404;
+    color: var(--warning-color);
 }
 
 .alert-danger {
     background-color: rgba(231, 76, 60, 0.1);
     border-color: var(--danger-color);
-    color: #721c24;
+    color: var(--danger-color);
 }
 
 .alert-info {
     background-color: rgba(52, 152, 219, 0.1);
     border-color: var(--secondary-color);
-    color: #0c5460;
+    color: var(--secondary-color);
 }
 
 /* Financial indicators */
@@ -446,7 +485,7 @@ body {
 }
 
 .neutral {
-    color: var(--gray-dark);
+    color: var(--text-secondary);
 }
 
 /* Filters and Controls */
@@ -498,7 +537,7 @@ input[type="checkbox"], input[type="radio"] {
 /* Summary boxes */
 .summary-box {
     background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-    color: white;
+    color: var(--text-inverse);
     padding: 1.5rem;
     border-radius: var(--border-radius);
     margin: 1.5rem 0;
@@ -621,7 +660,7 @@ input[type="checkbox"], input[type="radio"] {
 }
 
 .vat-rate-card {
-    background: white;
+    background: var(--bg-card);
     border-radius: var(--border-radius);
     padding: 1.5rem;
     box-shadow: var(--box-shadow);
@@ -697,7 +736,7 @@ input[type="checkbox"], input[type="radio"] {
 
 /* Monthly VAT Chart */
 .vat-monthly-chart {
-    background: white;
+    background: var(--bg-card);
     border-radius: var(--border-radius);
     padding: 1.5rem;
     margin: 1.5rem 0;
@@ -811,7 +850,7 @@ input[type="checkbox"], input[type="radio"] {
 }
 
 .vat-summary-card {
-    background: white;
+    background: var(--bg-card);
     border-radius: var(--border-radius);
     padding: 1rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -828,7 +867,7 @@ input[type="checkbox"], input[type="radio"] {
 
 .vat-summary-card.net {
     border-left: 4px solid var(--secondary-color);
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    background: linear-gradient(135deg, var(--gray-light), var(--gray-medium));
 }
 
 .vat-summary-value {
@@ -920,7 +959,7 @@ input[type="file"].form-control::file-selector-button {
     border: none;
     border-radius: var(--border-radius);
     background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-    color: white;
+    color: var(--text-inverse);
     font-weight: 600;
     cursor: pointer;
     margin-right: 1rem;
@@ -945,4 +984,159 @@ input[type="file"].form-control::file-selector-button:hover {
 .receipt-icon-inactive {
     color: var(--gray-medium);
     font-size: 1.1rem;
+}
+
+/* Dark mode overrides for inline-styled elements */
+[data-theme="dark"] .data-table th {
+    color: var(--text-inverse);
+}
+
+[data-theme="dark"] .btn-primary,
+[data-theme="dark"] .btn-secondary,
+[data-theme="dark"] .btn-danger,
+[data-theme="dark"] .btn-success {
+    color: var(--text-inverse);
+}
+
+[data-theme="dark"] .alert-success {
+    background-color: rgba(39, 174, 96, 0.15);
+    color: #2ecc71;
+}
+
+[data-theme="dark"] .alert-warning {
+    background-color: rgba(243, 156, 18, 0.15);
+    color: #f1c40f;
+}
+
+[data-theme="dark"] .alert-danger {
+    background-color: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+}
+
+[data-theme="dark"] .alert-info {
+    background-color: rgba(52, 152, 219, 0.15);
+    color: #5dade2;
+}
+
+[data-theme="dark"] .checkbox-group label {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .tab-button {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .tab-button.active {
+    color: var(--text-inverse);
+}
+
+[data-theme="dark"] .nav-links a {
+    color: var(--text-primary);
+    background-color: var(--gray-medium);
+}
+
+[data-theme="dark"] .nav-links a:hover {
+    color: var(--text-inverse);
+}
+
+[data-theme="dark"] .data-table td {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .card h3,
+[data-theme="dark"] .card-title {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-text,
+[data-theme="dark"] small {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .section-title {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .btn-secondary {
+    color: var(--text-inverse);
+    background-color: var(--gray-medium);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+    background-color: var(--gray-dark);
+}
+
+[data-theme="dark"] .filter-group label {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .positive {
+    color: #2ecc71;
+}
+
+[data-theme="dark"] .negative {
+    color: #e74c3c;
+}
+
+[data-theme="dark"] .summary-box h3 {
+    color: var(--text-inverse);
+}
+
+[data-theme="dark"] .vat-summary-card h4 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .vat-summary-card.net {
+    background: linear-gradient(135deg, var(--gray-light), var(--gray-medium));
+}
+
+[data-theme="dark"] .vat-table td,
+[data-theme="dark"] .vat-table th {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .page-header h1,
+[data-theme="dark"] h1, [data-theme="dark"] h2 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .checkbox-group label {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .tab-button {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .tab-button.active {
+    color: var(--text-inverse);
+}
+
+/* Theme toggle button */
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    cursor: pointer;
+    background: none;
+    border: none;
+    width: 100%;
+    font-size: 0.9rem;
+    text-align: left;
+}
+
+.theme-toggle:hover {
+    background-color: var(--bg-hover);
+}
+
+.theme-toggle i {
+    font-size: 1rem;
+    width: 1.2rem;
+    text-align: center;
 }

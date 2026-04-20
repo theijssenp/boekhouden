@@ -364,7 +364,7 @@ function get_activity_icon($action_type) {
 }
 
 .stat-card {
-    background: white;
+    background: var(--bg-card);
     border-radius: 10px;
     padding: 20px;
     box-shadow: 0 3px 10px rgba(0,0,0,0.1);
@@ -387,12 +387,12 @@ function get_activity_icon($action_type) {
 .stat-content h3 {
     margin: 0;
     font-size: 28px;
-    color: #2c3e50;
+    color: var(--text-primary);
 }
 
 .stat-content p {
     margin: 5px 0 0 0;
-    color: #7f8c8d;
+    color: var(--text-secondary);
     font-weight: 500;
 }
 
@@ -409,7 +409,7 @@ function get_activity_icon($action_type) {
 }
 
 .dashboard-section {
-    background: white;
+    background: var(--bg-card);
     border-radius: 10px;
     padding: 25px;
     box-shadow: 0 3px 10px rgba(0,0,0,0.1);
@@ -417,7 +417,7 @@ function get_activity_icon($action_type) {
 
 .dashboard-section h2 {
     margin-top: 0;
-    color: #2c3e50;
+    color: var(--text-primary);
     font-size: 18px;
     display: flex;
     align-items: center;
@@ -440,10 +440,10 @@ function get_activity_icon($action_type) {
     align-items: center;
     gap: 12px;
     padding: 12px 15px;
-    background: #f8f9fa;
+    background: var(--bg-table-stripe);
     border-radius: 8px;
     text-decoration: none;
-    color: #2c3e50;
+    color: var(--text-primary);
     transition: all 0.3s;
     border: 1px solid #e9ecef;
 }
@@ -467,7 +467,7 @@ function get_activity_icon($action_type) {
 }
 
 .recent-activity {
-    background: white;
+    background: var(--bg-card);
     border-radius: 10px;
     padding: 25px;
     margin: 40px 0;
@@ -476,7 +476,7 @@ function get_activity_icon($action_type) {
 
 .recent-activity h2 {
     margin-top: 0;
-    color: #2c3e50;
+    color: var(--text-primary);
     font-size: 18px;
     display: flex;
     align-items: center;
@@ -499,7 +499,7 @@ function get_activity_icon($action_type) {
     align-items: flex-start;
     gap: 15px;
     padding: 15px;
-    background: #f8f9fa;
+    background: var(--bg-table-stripe);
     border-radius: 8px;
     border-left: 4px solid #3498db;
 }
@@ -514,7 +514,7 @@ function get_activity_icon($action_type) {
 }
 
 .activity-content strong {
-    color: #2c3e50;
+    color: var(--text-primary);
 }
 
 .activity-time {
@@ -524,7 +524,7 @@ function get_activity_icon($action_type) {
 }
 
 .system-status {
-    background: white;
+    background: var(--bg-card);
     border-radius: 10px;
     padding: 25px;
     margin: 40px 0;
@@ -533,7 +533,7 @@ function get_activity_icon($action_type) {
 
 .system-status h2 {
     margin-top: 0;
-    color: #2c3e50;
+    color: var(--text-primary);
     font-size: 18px;
     display: flex;
     align-items: center;
@@ -558,7 +558,7 @@ function get_activity_icon($action_type) {
     padding: 20px;
     border-radius: 8px;
     text-align: center;
-    background: #f8f9fa;
+    background: var(--bg-table-stripe);
 }
 
 .status-item i {
@@ -569,12 +569,12 @@ function get_activity_icon($action_type) {
 
 .status-item span {
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--text-primary);
     margin-bottom: 5px;
 }
 
 .status-item small {
-    color: #7f8c8d;
+    color: var(--text-secondary);
     font-size: 12px;
 }
 
@@ -600,7 +600,7 @@ function get_activity_icon($action_type) {
 
 .welcome-message p {
     margin: 0;
-    color: #2c3e50;
+    color: var(--text-primary);
     font-weight: 500;
 }
 
