@@ -142,7 +142,7 @@
             position: absolute;
             right: 0;
             top: 50px;
-            background-color: var(--text-inverse);
+            background-color: var(--bg-dropdown);
             min-width: 200px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.1);
             border-radius: 8px;
@@ -258,7 +258,7 @@
         
         /* Navigation styles */
         .nav-bar {
-            background-color: var(--text-inverse);
+            background-color: var(--bg-nav);
             border-radius: var(--border-radius, 8px);
             padding: 1rem;
             margin-bottom: 2rem;

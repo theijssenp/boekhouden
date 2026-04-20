@@ -656,7 +656,7 @@ if ($vatColumnsExist) {
             position: absolute;
             right: 0;
             top: 50px;
-            background-color: var(--text-inverse);
+            background-color: var(--bg-dropdown);
             min-width: 200px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.1);
             border-radius: 8px;
