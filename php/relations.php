@@ -405,32 +405,6 @@ include 'page_header.php';
                 performSearch();
             }
         });
-        
-        // Profile dropdown functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const profileIcon = document.getElementById('profileIcon');
-            const profileDropdown = document.getElementById('profileDropdown');
-
-            if (profileIcon && profileDropdown) {
-                profileIcon.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    profileDropdown.classList.toggle('show');
-                });
-
-                document.addEventListener('click', function(e) {
-                    if (!profileIcon.contains(e.target) && !profileDropdown.contains(e.target)) {
-                        profileDropdown.classList.remove('show');
-                    }
-                });
-
-                const dropdownLinks = profileDropdown.querySelectorAll('a');
-                dropdownLinks.forEach(link => {
-                    link.addEventListener('click', function() {
-                        profileDropdown.classList.remove('show');
-                    });
-                });
-            }
-        });
     </script>
 
     <footer style="text-align: center; padding: 20px; margin-top: 40px; color: var(--text-secondary); font-size: 12px; border-top: 1px solid var(--border-color);">
