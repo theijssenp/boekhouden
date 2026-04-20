@@ -479,33 +479,6 @@ include 'php/page_header.php';
                     }
                 });
             });
-            
-            // Profile dropdown functionality
-            const profileIcon = document.getElementById('profileIcon');
-            const profileDropdown = document.getElementById('profileDropdown');
-            
-            if (profileIcon && profileDropdown) {
-                // Toggle dropdown on click
-                profileIcon.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    profileDropdown.classList.toggle('show');
-                });
-                
-                // Close dropdown when clicking outside
-                document.addEventListener('click', function(e) {
-                    if (!profileIcon.contains(e.target) && !profileDropdown.contains(e.target)) {
-                        profileDropdown.classList.remove('show');
-                    }
-                });
-                
-                // Close dropdown when clicking on a link inside it
-                const dropdownLinks = profileDropdown.querySelectorAll('a');
-                dropdownLinks.forEach(link => {
-                    link.addEventListener('click', function() {
-                        profileDropdown.classList.remove('show');
-                    });
-                });
-            }
         });
     </script>
     
