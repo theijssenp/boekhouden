@@ -161,6 +161,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
+    // AJAX request: return JSON for auto-opening invoice
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'transaction_id' => $id]);
+        exit;
+    }
+
     header('Location: ../index.php');
     exit;
 }
@@ -363,12 +370,11 @@ include 'page_header.php';
                 </button>
                 <a href="../index.php" class="btn btn-secondary">Annuleren</a>
                 <?php if ($transaction['type'] == 'inkomst'): ?>
-                <a href="../pdf/invoice_pdf.php?id=<?php echo $transaction['id']; ?>"
+                <button type="button" id="invoicePrintBtn"
                    class="btn btn-primary"
-                   target="_blank"
-                   title="Factuur als PDF printen">
+                   title="Opslaan en factuur als PDF printen">
                     <i class="fas fa-file-pdf"></i> Factuur Printen
-                </a>
+                </button>
                 <?php endif; ?>
                 <a href="delete.php?id=<?php echo $transaction['id']; ?>"
                    class="btn btn-danger"
@@ -394,6 +400,37 @@ include 'page_header.php';
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Save + print invoice: submit form via fetch, then open PDF
+            const invoicePrintBtn = document.getElementById('invoicePrintBtn');
+            if (invoicePrintBtn) {
+                invoicePrintBtn.addEventListener('click', async function() {
+                    const form = document.querySelector('.transaction-form');
+                    const btn = this;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opslaan...';
+                    try {
+                        const formData = new FormData(form);
+                        const response = await fetch('edit.php?id=<?php echo $id; ?>', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {'X-Requested-With': 'XMLHttpRequest'}
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                            btn.innerHTML = '<i class="fas fa-file-pdf"></i> PDF openen...';
+                            window.open('../pdf/invoice_pdf.php?id=' + result.transaction_id, '_blank');
+                            window.location.href = '../index.php';
+                        } else {
+                            throw new Error('Save failed');
+                        }
+                    } catch (err) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-file-pdf"></i> Factuur Printen';
+                        alert('Er is een fout opgetreden bij het opslaan.');
+                    }
+                });
+            }
+
             const typeSelect = document.getElementById('type');
             const vatDeductible = document.getElementById('vat_deductible');
             const vatDeductibleLabel = document.querySelector('label[for="vat_deductible"]');

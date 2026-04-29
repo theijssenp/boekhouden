@@ -106,6 +106,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         header('Location: ../index.php');
         exit;
     }
+
+    // Add user_id and relation_id to the transaction
+    $stmt = $pdo->prepare("INSERT INTO transactions (date, description, amount, type, category_id, vat_percentage, vat_included, vat_deductible, invoice_number, user_id, relation_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $user_id, $relation_id]);
+    $transaction_id = $pdo->lastInsertId();
+
+    // AJAX request: return JSON with transaction ID for auto-opening invoice
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'transaction_id' => $transaction_id]);
+        exit;
+    }
+
+    header('Location: ../index.php');
+    exit;
 }
 
 $page_title = 'Verkoop Boeken';
@@ -170,3 +185,215 @@ include 'page_header.php';
                         <?php endforeach; ?>
                     </select>
                     <small class="form-text">
+                        Optioneel: Koppel deze verkoop aan een klant.
+                        <a href="add_relation.php?type=debiteur&return=add_income.php" class="relation-add-link">
+                            <i class="fas fa-plus-circle"></i> Nieuwe debiteur toevoegen
+                        </a>
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="invoice_number">Factuurnummer <span id="invoice_number_label_auto">(automatisch gegenereerd)</span></label>
+                    <input type="text" id="invoice_number" name="invoice_number" class="form-control"
+                           placeholder="Wordt automatisch gegenereerd..." readonly
+                           style="background-color: #f5f5f5; cursor: not-allowed;">
+                    <small class="form-text">Factuurnummer wordt automatisch gegenereerd bij opslaan</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="amount">Bedrag excl. BTW (€) *</label>
+                    <input type="number" id="amount" name="amount" class="form-control"
+                           step="0.01" placeholder="0.00" required>
+                    <small class="form-text">Voer het bedrag exclusief BTW in (BTW wordt berekend)</small>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="card-title">BTW Instellingen</h3>
+
+                <div class="form-group">
+                    <label for="vat_percentage">BTW Percentage</label>
+                    <select id="vat_percentage" name="vat_percentage" class="form-control">
+                        <?php foreach ($vat_rates as $rate): ?>
+                        <option value="<?php echo $rate['rate']; ?>"
+                                <?php echo $rate['rate'] == 21 ? 'selected' : ''; ?>
+                                title="<?php echo htmlspecialchars($rate['description']); ?>">
+                            <?php echo $rate['rate']; ?>% (<?php echo htmlspecialchars($rate['name']); ?>)
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="form-text">BTW tarieven gelden voor de geselecteerde datum</small>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="vat_included" name="vat_included" value="1">
+                    <label for="vat_included">Bedrag is inclusief BTW</label>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Let op:</strong> Voor verkopen is BTW altijd af te dragen aan de Belastingdienst.
+                </div>
+
+                <div id="vatCalculationDisplay" class="alert alert-info" style="display: none;">
+                    <strong>BTW berekening:</strong> <span id="vatCalculationText">Voer bedrag en BTW percentage in</span>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                    Verkoop Opslaan
+                </button>
+                <a href="../index.php" class="btn btn-secondary">Annuleren</a>
+            </div>
+        </form>
+
+        <div class="alert alert-info" style="margin-top: 2rem;">
+            <strong>BTW Berekeningswijze:</strong><br>
+            - <strong>Inclusief BTW:</strong> BTW wordt berekend van het ingevoerde bedrag<br>
+            - <strong>Exclusief BTW:</strong> BTW wordt opgeteld bij het ingevoerde bedrag (aanbevolen)<br>
+            - <strong>Verkoop BTW:</strong> BTW is altijd verschuldigd aan de Belastingdienst
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Submit form via fetch to auto-open invoice PDF
+            const form = document.querySelector('.transaction-form');
+            const submitBtn = document.getElementById('submitBtn');
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Bezig met opslaan...';
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch('add_income.php', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {'X-Requested-With': 'XMLHttpRequest'}
+                    });
+                    const result = await response.json();
+                    if (result.success && result.transaction_id) {
+                        window.open('../pdf/invoice_pdf.php?id=' + result.transaction_id, '_blank');
+                    }
+                    window.location.href = '../index.php';
+                } catch (err) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Verkoop Opslaan';
+                    alert('Er is een fout opgetreden bij het opslaan.');
+                }
+            });
+            const dateInput = document.getElementById('date');
+            const vatPercentageSelect = document.getElementById('vat_percentage');
+            const invoiceNumberInput = document.getElementById('invoice_number');
+
+            // Update VAT rates based on selected date
+            async function updateVatRatesForDate(selectedDate) {
+                try {
+                    const response = await fetch(`get_vat_rates.php?date=${selectedDate}`);
+                    if (!response.ok) throw new Error('Network response was not ok');
+
+                    const rates = await response.json();
+
+                    // Clear existing options
+                    vatPercentageSelect.innerHTML = '';
+
+                    // Add new options
+                    rates.forEach(rate => {
+                        const option = document.createElement('option');
+                        option.value = rate.rate;
+                        option.textContent = `${rate.rate}% (${rate.name})`;
+                        option.title = rate.description;
+
+                        // Select 21% by default, or first rate if 21% not available
+                        if (rate.rate == 21 || (rates.length > 0 && rates[0].rate == rate.rate)) {
+                            option.selected = true;
+                        }
+
+                        vatPercentageSelect.appendChild(option);
+                    });
+
+                    // Show notification if rates changed
+                    if (rates.length > 0) {
+                        console.log(`VAT rates updated for ${selectedDate}`);
+                    }
+                } catch (error) {
+                    console.error('Error fetching VAT rates:', error);
+                    // Keep existing rates if fetch fails
+                }
+            }
+
+            // Calculate VAT on the fly and update display
+            function updateVatCalculation() {
+                const amountInput = document.getElementById('amount');
+                const vatPercentageSelect = document.getElementById('vat_percentage');
+                const vatIncludedCheckbox = document.getElementById('vat_included');
+                const vatCalculationDisplay = document.getElementById('vatCalculationDisplay');
+                const vatCalculationText = document.getElementById('vatCalculationText');
+
+                const amount = parseFloat(amountInput.value) || 0;
+                const vatRate = parseFloat(vatPercentageSelect.value) || 0;
+                const vatIncluded = vatIncludedCheckbox.checked;
+
+                if (vatRate > 0 && amount !== 0) {
+                    let vatAmount, baseAmount, totalAmount;
+                    let calculationText = '';
+
+                    if (vatIncluded) {
+                        baseAmount = amount / (1 + (vatRate / 100));
+                        vatAmount = amount - baseAmount;
+                        calculationText = `€${amount.toFixed(2)} inclusief ${vatRate}% BTW = €${baseAmount.toFixed(2)} excl. BTW + €${vatAmount.toFixed(2)} BTW`;
+                    } else {
+                        vatAmount = amount * (vatRate / 100);
+                        totalAmount = amount + vatAmount;
+                        calculationText = `€${amount.toFixed(2)} excl. ${vatRate}% BTW = €${totalAmount.toFixed(2)} incl. BTW (€${amount.toFixed(2)} + €${vatAmount.toFixed(2)} BTW)`;
+                    }
+
+                    vatCalculationText.textContent = calculationText;
+                    vatCalculationDisplay.style.display = 'block';
+                } else {
+                    vatCalculationDisplay.style.display = 'none';
+                }
+            }
+
+            // Fetch next invoice number on page load
+            async function fetchNextInvoiceNumber() {
+                try {
+                    const response = await fetch('get_next_invoice_number.php');
+                    if (response.ok) {
+                        const data = await response.json();
+                        invoiceNumberInput.value = data.invoice_number;
+                    }
+                } catch (error) {
+                    console.error('Error fetching invoice number:', error);
+                    // Fallback: generate client-side placeholder
+                    const year = new Date().getFullYear();
+                    invoiceNumberInput.value = `${year}-0001`;
+                }
+            }
+
+            // Event listeners
+            dateInput.addEventListener('change', function() {
+                updateVatRatesForDate(this.value);
+            });
+
+            // Add event listeners for VAT calculation
+            document.getElementById('amount').addEventListener('input', updateVatCalculation);
+            document.getElementById('vat_percentage').addEventListener('change', updateVatCalculation);
+            document.getElementById('vat_included').addEventListener('change', updateVatCalculation);
+
+            // Set today's date as default and update VAT rates
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
+            updateVatRatesForDate(today);
+
+            // Fetch next invoice number
+            fetchNextInvoiceNumber();
+        });
+    </script>
+
+    <footer style="text-align: center; padding: 20px; margin-top: 40px; color: var(--text-secondary); font-size: 12px; border-top: 1px solid var(--border-color);">
+        powered by P. Theijssen
+    </footer>
+<?php require 'theme_toggle.php'; ?>
+</body>
+</html>

@@ -178,6 +178,7 @@ class InvoicePDF extends FPDF {
 $pdf = new InvoicePDF($company, $transaction);
 $pdf->AddPage();
 $pdf->SetMargins(15, 15, 15);
+$pdf->SetAutoPageBreak(true, 35);
 
 // Company details (sender) - left side
 $pdf->SetFont('Arial', 'B', 11);
@@ -354,12 +355,6 @@ if (!empty($transaction['relation_notes'])) {
     $pdf->SetFont('Arial', '', 9);
     $pdf->MultiCell(0, 4, convert_encoding($transaction['relation_notes']));
 }
-
-// Thank you message
-$pdf->Ln(10);
-$pdf->SetFont('Arial', 'I', 10);
-$pdf->SetTextColor(100, 100, 100);
-$pdf->MultiCell(0, 5, 'Hartelijk dank voor uw opdracht. Wij vertrouwen erop u hiermee naar tevredenheid te hebben geholpen.');
 
 // Output PDF - clean buffer first
 ob_clean();
