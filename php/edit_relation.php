@@ -412,6 +412,7 @@ include 'page_header.php';
                 <div class="form-group">
                     <label for="notes">Notities</label>
                     <textarea id="notes" name="notes" class="form-control" rows="4"><?php echo htmlspecialchars($relation['notes'] ?? ''); ?></textarea>
+                    <small class="form-text" style="color: #e67e22;"><i class="fas fa-exclamation-triangle"></i> Let op: de notities van deze relatie worden op de factuur weergegeven.</small>
                 </div>
             </div>
             

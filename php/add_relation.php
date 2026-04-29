@@ -359,7 +359,8 @@ include 'page_header.php';
                 <div class="form-group">
                     <label for="notes">Notities</label>
                     <textarea id="notes" name="notes" class="form-control" rows="4"
-                              placeholder="Eventuele opmerkingen of notities over deze relatie..."></textarea>
+                              placeholder="Bijv. inkoopordernummer — deze notities verschijnen op de factuur"></textarea>
+                    <small class="form-text" style="color: #e67e22;"><i class="fas fa-exclamation-triangle"></i> Let op: de notities van deze relatie worden op de factuur weergegeven.</small>
                 </div>
             </div>
 
