@@ -5,8 +5,16 @@
  * @author P. Theijssen
  */
 
-// Start session if not already started
+// Start session if not already started with secure cookie parameters
 if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'domain' => '',
+        'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+        'httponly' => true,
+        'samesite' => 'Strict'
+    ]);
     session_start();
 }
 
@@ -706,6 +714,51 @@ function generate_next_invoice_number($user_id = null) {
 }
 
 /**
+ * Generate a CSRF token and store it in the session
+ */
+function generate_csrf_token() {
+    if (!isset($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/**
+ * Validate a CSRF token against the session-stored token
+ */
+function validate_csrf_token($token) {
+    if (!isset($_SESSION['csrf_token']) || empty($token)) {
+        return false;
+    }
+    return hash_equals($_SESSION['csrf_token'], $token);
+}
+
+/**
+ * Verify CSRF token on POST requests, die on failure
+ */
+function require_csrf_token() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return;
+    }
+    $token = $_POST['csrf_token'] ?? '';
+    if (!validate_csrf_token($token)) {
+        $_SESSION['error_message'] = 'Ongeldig of verlopen beveiligingstoken. Probeer het opnieuw.';
+        header('Location: ' . $_SERVER['HTTP_REFERER'] ?? 'index.php');
+        exit;
+    }
+}
+
+/**
+ * Output a hidden CSRF token field for forms
+ */
+function csrf_field() {
+    return '<input type="hidden" name="csrf_token" value="' . generate_csrf_token() . '">';
+}
+
+/**
+ * Validate session on each request
+ */
+/**
  * Validate session on each request
  */
 function validate_session() {
@@ -735,6 +788,49 @@ function validate_session() {
     $stmt->execute([$session_id]);
     
     return true;
+}
+
+/**
+ * I2: Validate transaction input fields
+ */
+function validate_transaction_input($data) {
+    $errors = [];
+    
+    // Validate date
+    if (empty($data['date'])) {
+        $errors[] = 'Datum is verplicht';
+    } elseif (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $data['date'])) {
+        $errors[] = 'Ongeldig datumformaat (YYYY-MM-DD)';
+    } elseif (!strtotime($data['date'])) {
+        $errors[] = 'Ongeldige datum';
+    }
+    
+    // Validate description
+    if (empty($data['description'])) {
+        $errors[] = 'Omschrijving is verplicht';
+    } elseif (strlen($data['description']) > 500) {
+        $errors[] = 'Omschrijving mag maximaal 500 tekens bevatten';
+    } elseif (strlen(trim($data['description'])) < 2) {
+        $errors[] = 'Omschrijving moet minimaal 2 tekens bevatten';
+    }
+    
+    // Validate amount
+    if (!isset($data['amount']) || $data['amount'] === '') {
+        $errors[] = 'Bedrag is verplicht';
+    } elseif (!is_numeric($data['amount'])) {
+        $errors[] = 'Bedrag moet een numerieke waarde zijn';
+    } elseif ($data['amount'] <= 0) {
+        $errors[] = 'Bedrag moet groter zijn dan 0';
+    } elseif ($data['amount'] > 999999999.99) {
+        $errors[] = 'Bedrag mag niet groter zijn dan 999.999.999,99';
+    }
+    
+    // Validate invoice number (if provided)
+    if (!empty($data['invoice_number']) && strlen($data['invoice_number']) > 50) {
+        $errors[] = 'Factuurnummer mag maximaal 50 tekens bevatten';
+    }
+    
+    return $errors;
 }
 
 // Validate session on each request

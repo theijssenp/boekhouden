@@ -17,7 +17,7 @@ $error_message = '';
 $success_message = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Validate required fields
+    require_csrf_token();
     $company_name = trim($_POST['company_name'] ?? '');
     $relation_type = $_POST['relation_type'] ?? '';
 
@@ -184,7 +184,7 @@ include 'page_header.php';
         <h2 class="section-title">Nieuwe Relatie Toevoegen</h2>
 
         <form method="post" class="transaction-form">
-            <!-- Relation Type Selection -->
+            <?php echo csrf_field(); ?>
             <div class="card">
                 <h3 class="card-title"><i class="fas fa-tag"></i> Relatietype *</h3>
                 <div class="relation-type-selector">

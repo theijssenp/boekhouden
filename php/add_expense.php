@@ -83,7 +83,7 @@ if (empty($vat_rates)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $date = $_POST['date'];
+    require_csrf_token();
     $description = $_POST['description'];
     $amount = $_POST['amount'];
     $type = 'uitgave'; // Always expense for this form
@@ -148,7 +148,7 @@ include 'page_header.php';
         <h2 class="section-title">Inkoopgegevens</h2>
 
         <form method="post" class="transaction-form" enctype="multipart/form-data">
-            <div class="card">
+            <?php echo csrf_field(); ?>
                 <h3 class="card-title">Basisgegevens</h3>
 
                 <div class="form-group">

@@ -2,13 +2,28 @@
 require 'auth_functions.php';
 require_login();
 
+// I1: POST-only DELETE met CSRF token
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $_SESSION['error_message'] = "Ongeldige aanvraag. Transacties kunnen alleen via het formulier worden verwijderd.";
+    header('Location: ../index.php');
+    exit;
+}
+
+require_csrf_token();
+
 // Get user info and admin status
 $user_id = get_current_user_id();
 $is_admin = is_admin();
 
 require 'config.php';
 
-$id = $_GET['id'];
+$id = $_POST['id'] ?? 0;
+
+if (!$id) {
+    $_SESSION['error_message'] = "Geen transactie ID opgegeven.";
+    header('Location: ../index.php');
+    exit;
+}
 
 // Clear receipt BLOB from transaction before deletion
 require 'receipt_functions.php';

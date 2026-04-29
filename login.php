@@ -32,8 +32,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($result['success']) {
             $success = 'Succesvol ingelogd!';
             
-            // Immediate redirect
-            $redirect = $_GET['redirect'] ?? (is_admin() ? 'index.php' : 'index.php');
+            // Immediate redirect - validate redirect URL against whitelist
+            $redirect_raw = $_GET['redirect'] ?? 'index.php';
+            $allowed_redirects = ['index.php', 'php/admin_dashboard.php', 'php/admin_users.php', 'php/relations.php', 'php/profit_loss.php', 'php/btw_kwartaal.php', 'php/balans.php'];
+            if (!empty($redirect_raw) && $redirect_raw !== 'index.php') {
+                $redirect_path = parse_url($redirect_raw, PHP_URL_PATH) ?: $redirect_raw;
+                $redirect_path = ltrim($redirect_path, '/');
+                $redirect = in_array($redirect_path, $allowed_redirects) ? $redirect_path : 'index.php';
+            } else {
+                $redirect = 'index.php';
+            }
             header("Location: $redirect");
             exit;
         } else {
