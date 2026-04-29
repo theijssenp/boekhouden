@@ -102,25 +102,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Add user_id and relation_id to the transaction
         $stmt = $pdo->prepare("INSERT INTO transactions (date, description, amount, type, category_id, vat_percentage, vat_included, vat_deductible, invoice_number, user_id, relation_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $user_id, $relation_id]);
+        $transaction_id = $pdo->lastInsertId();
+
+        // AJAX request: return JSON with transaction ID for auto-opening invoice
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'transaction_id' => $transaction_id]);
+            exit;
+        }
 
         header('Location: ../index.php');
         exit;
     }
-
-    // Add user_id and relation_id to the transaction
-    $stmt = $pdo->prepare("INSERT INTO transactions (date, description, amount, type, category_id, vat_percentage, vat_included, vat_deductible, invoice_number, user_id, relation_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $user_id, $relation_id]);
-    $transaction_id = $pdo->lastInsertId();
-
-    // AJAX request: return JSON with transaction ID for auto-opening invoice
-    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-        header('Content-Type: application/json');
-        echo json_encode(['success' => true, 'transaction_id' => $transaction_id]);
-        exit;
-    }
-
-    header('Location: ../index.php');
-    exit;
 }
 
 $page_title = 'Verkoop Boeken';
@@ -271,11 +264,17 @@ include 'page_header.php';
                         body: formData,
                         headers: {'X-Requested-With': 'XMLHttpRequest'}
                     });
-                    const result = await response.json();
-                    if (result.success && result.transaction_id) {
-                        window.open('../pdf/invoice_pdf.php?id=' + result.transaction_id, '_blank');
+                    const contentType = response.headers.get('content-type') || '';
+                    if (contentType.includes('application/json')) {
+                        const result = await response.json();
+                        if (result.success && result.transaction_id) {
+                            window.open('../pdf/invoice_pdf.php?id=' + result.transaction_id, '_blank');
+                        }
+                        window.location.href = '../index.php';
+                    } else {
+                        // Validation error: reload page to show error
+                        window.location.reload();
                     }
-                    window.location.href = '../index.php';
                 } catch (err) {
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Verkoop Opslaan';
