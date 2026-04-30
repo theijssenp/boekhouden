@@ -15,7 +15,7 @@ require_csrf_token();
 $user_id = get_current_user_id();
 $is_admin = is_admin();
 
-require 'config.php';
+require_once 'config.php';
 
 $id = $_POST['id'] ?? 0;
 

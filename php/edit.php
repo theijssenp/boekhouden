@@ -121,6 +121,7 @@ if (empty($vat_rates)) {
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     require_csrf_token();
+    $date = $_POST['date'];
     $description = $_POST['description'];
     $amount = $_POST['amount'];
     $type = $_POST['type'];

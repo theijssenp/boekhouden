@@ -84,6 +84,7 @@ if (empty($vat_rates)) {
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     require_csrf_token();
+    $date = $_POST['date'];
     $description = $_POST['description'];
     $amount = $_POST['amount'];
     $type = 'uitgave'; // Always expense for this form
@@ -99,26 +100,38 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $category_id = '';
     }
 
-    // Add user_id and relation_id to the transaction
-    $stmt = $pdo->prepare("INSERT INTO transactions (date, description, amount, type, category_id, vat_percentage, vat_included, vat_deductible, invoice_number, user_id, relation_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $user_id, $relation_id]);
+    // Validate input before saving
+    $errors = validate_transaction_input([
+        'date' => $date,
+        'description' => $description,
+        'amount' => $amount,
+        'vat_percentage' => $vat_percentage,
+        'invoice_number' => $invoice_number
+    ]);
+    if (!empty($errors)) {
+        $error_message = implode('<br>', $errors);
+    } else {
+        // Add user_id and relation_id to the transaction
+        $stmt = $pdo->prepare("INSERT INTO transactions (date, description, amount, type, category_id, vat_percentage, vat_included, vat_deductible, invoice_number, user_id, relation_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$date, $description, $amount, $type, $category_id, $vat_percentage, $vat_included, $vat_deductible, $invoice_number, $user_id, $relation_id]);
 
-    // Handle receipt upload
-    if (!empty($_FILES['receipt']['name'])) {
-        require 'receipt_functions.php';
-        $transaction_id = $pdo->lastInsertId();
+        // Handle receipt upload
+        if (!empty($_FILES['receipt']['name'])) {
+            require 'receipt_functions.php';
+            $transaction_id = $pdo->lastInsertId();
 
-        $validation = validate_receipt_upload($_FILES['receipt']);
-        if ($validation['valid']) {
-            $receipt_data = process_receipt_upload($_FILES['receipt']);
-            if ($receipt_data) {
-                save_receipt_to_transaction($pdo, $transaction_id, $receipt_data, $user_id, $is_admin);
+            $validation = validate_receipt_upload($_FILES['receipt']);
+            if ($validation['valid']) {
+                $receipt_data = process_receipt_upload($_FILES['receipt']);
+                if ($receipt_data) {
+                    save_receipt_to_transaction($pdo, $transaction_id, $receipt_data, $user_id, $is_admin);
+                }
             }
         }
-    }
 
-    header('Location: ../index.php');
-    exit;
+        header('Location: ../index.php');
+        exit;
+    }
 }
 
 $page_title = 'Inkoop Boeken';

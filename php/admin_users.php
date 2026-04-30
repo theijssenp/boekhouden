@@ -547,6 +547,7 @@ if ($user_id && ($action === 'edit' || $action === 'view')) {
             <p>Weet je zeker dat je gebruiker "<span id="deleteUsername"></span>" wilt verwijderen?</p>
             <p class="text-warning"><strong>Waarschuwing:</strong> Deze actie kan niet ongedaan worden gemaakt!</p>
             <form id="deleteForm" method="POST">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="user_id" id="deleteUserId">
                 <div class="modal-actions">
