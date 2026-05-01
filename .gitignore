@@ -29,6 +29,7 @@ logs/
 *.temp
 
 AGENTS.md
+PROMPT.md
 
 dump.sql
 config.php
