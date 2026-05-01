@@ -425,3 +425,13 @@ function is_nav_active($match, $_active_nav) {
     <?php if (isset($success_message) && $success_message): ?>
         <div class="alert alert-success"><?php echo htmlspecialchars($success_message); ?></div>
     <?php endif; ?>
+
+    <?php if (isset($_SESSION['warning_message']) && $_SESSION['warning_message']): ?>
+        <?php $warning_message = $_SESSION['warning_message']; unset($_SESSION['warning_message']); ?>
+        <div class="alert alert-warning"><?php echo htmlspecialchars($warning_message); ?></div>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['success_message']) && $_SESSION['success_message']): ?>
+        <?php $success_message = $_SESSION['success_message']; unset($_SESSION['success_message']); ?>
+        <div class="alert alert-success"><?php echo htmlspecialchars($success_message); ?></div>
+    <?php endif; ?>

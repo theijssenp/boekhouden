@@ -41,3 +41,13 @@ PDF_FACTUUR_README.md
 pdf/*.tgz
 pdf/*.tar.gz
 .a0proj/
+
+# Test- en hulpscripts (niet in productie)
+php/test_*.php
+php/fix_passwords_cli.php
+php/apply_schema_direct.php
+php/apply_user_schema.php
+php/backup_database.php
+php/backup_interface.php
+php/delete_backup.php
+php/sample_data_interface.php

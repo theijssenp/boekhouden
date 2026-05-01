@@ -438,9 +438,8 @@ include 'php/page_header.php';
             <ul>
                 <li><strong>Eerste klik:</strong> Sorteer oplopend (A-Z, 0-9, oud-nieuw)</li>
                 <li><strong>Tweede klik:</strong> Sorteer aflopend (Z-A, 9-0, nieuw-oud)</li>
-                <li><strong>Derde klik:</strong> Terug naar standaard sortering (datum oplopend)</li>
             </ul>
-            <p>De huidige sortering wordt weergegeven boven de tabel met een pijl (↑ oplopend, ↓ aflopend).</p>
+            <p>Gebruik de knop "Standaard sortering" om terug te keren naar de standaardweergave. De huidige sortering wordt weergegeven met een pijl (↑ oplopend, ↓ aflopend).</p>
         </div>
     </main>
 

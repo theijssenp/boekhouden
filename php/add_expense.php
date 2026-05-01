@@ -11,8 +11,6 @@ require_login();
 $user_id = get_current_user_id();
 $is_admin = is_admin();
 
-require 'config.php';
-
 // Get active crediteuren (only for current user or admin)
 if ($is_admin) {
     $stmt_relations = $pdo->query("
@@ -36,40 +34,24 @@ if ($is_admin) {
 $crediteuren = $stmt_relations->fetchAll(PDO::FETCH_ASSOC);
 
 // Get categories accessible to the current user (exclude "Inkomsten" category)
+$inkomsten_cat_id = get_inkomsten_category_id();
 if ($is_admin) {
     // Admin can see all categories except "Inkomsten"
-    $categories = $pdo->query("SELECT * FROM categories WHERE id != 1 ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $pdo->prepare("SELECT * FROM categories WHERE id != ? ORDER BY name");
+    $stmt->execute([$inkomsten_cat_id]);
 } else {
     // Regular users can see system categories (except "Inkomsten") and their own categories
     $stmt = $pdo->prepare("
         SELECT * FROM categories
-        WHERE (is_system = 1 OR user_id = ?) AND id != 1
+        WHERE (is_system = 1 OR user_id = ?) AND id != ?
         ORDER BY name
     ");
-    $stmt->execute([$user_id]);
-    $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->execute([$user_id, $inkomsten_cat_id]);
 }
+$categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get VAT rates for the default date (today)
 $default_date = date('Y-m-d');
-
-// Function to get applicable VAT rates for a specific date
-function get_vat_rates_for_date($pdo, $date) {
-    $stmt = $pdo->prepare("
-        SELECT
-            rate,
-            name,
-            MAX(description) as description
-        FROM vat_rates
-        WHERE is_active = TRUE
-          AND effective_from <= ?
-          AND (effective_to IS NULL OR effective_to >= ?)
-        GROUP BY rate, name
-        ORDER BY rate DESC
-    ");
-    $stmt->execute([$date, $date]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
 
 $vat_rates = get_vat_rates_for_date($pdo, $default_date);
 
@@ -95,8 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $invoice_number = !empty($_POST['invoice_number']) ? $_POST['invoice_number'] : null;
     $relation_id = !empty($_POST['relation_id']) ? $_POST['relation_id'] : null;
 
-    // Validate that category is not "Inkomsten" (ID 1)
-    if ($category_id == 1) {
+    // Validate that category is not "Inkomsten"
+    if ($category_id == get_inkomsten_category_id()) {
         $category_id = '';
     }
 
@@ -126,6 +108,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if ($receipt_data) {
                     save_receipt_to_transaction($pdo, $transaction_id, $receipt_data, $user_id, $is_admin);
                 }
+            } else {
+                $_SESSION['warning_message'] = 'Inkoop opgeslagen, maar bonnetje kon niet worden verwerkt: ' . $validation['error'];
             }
         }
 
@@ -162,6 +146,7 @@ include 'page_header.php';
 
         <form method="post" class="transaction-form" enctype="multipart/form-data">
             <?php echo csrf_field(); ?>
+            <div class="card">
                 <h3 class="card-title">Basisgegevens</h3>
 
                 <div class="form-group">

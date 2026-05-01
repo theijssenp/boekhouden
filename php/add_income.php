@@ -11,8 +11,6 @@ require_login();
 $user_id = get_current_user_id();
 $is_admin = is_admin();
 
-require 'config.php';
-
 // Get active debiteuren (only for current user or admin)
 if ($is_admin) {
     $stmt_relations = $pdo->query("
@@ -37,24 +35,6 @@ $debiteuren = $stmt_relations->fetchAll(PDO::FETCH_ASSOC);
 
 // Get VAT rates for the default date (today)
 $default_date = date('Y-m-d');
-
-// Function to get applicable VAT rates for a specific date
-function get_vat_rates_for_date($pdo, $date) {
-    $stmt = $pdo->prepare("
-        SELECT
-            rate,
-            name,
-            MAX(description) as description
-        FROM vat_rates
-        WHERE is_active = TRUE
-          AND effective_from <= ?
-          AND (effective_to IS NULL OR effective_to >= ?)
-        GROUP BY rate, name
-        ORDER BY rate DESC
-    ");
-    $stmt->execute([$date, $date]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
 
 $vat_rates = get_vat_rates_for_date($pdo, $default_date);
 
@@ -87,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $error_message = implode('<br>', $errors);
     } else {
         $type = 'inkomst'; // Always income for this form
-        $category_id = 1; // Always "Inkomsten" category
+        $category_id = get_inkomsten_category_id();
         $vat_percentage = $_POST['vat_percentage'] ?? 0;
         $vat_included = isset($_POST['vat_included']) ? 1 : 0;
         $vat_deductible = 0; // Never deductible for income

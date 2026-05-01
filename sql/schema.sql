@@ -33,6 +33,39 @@ CREATE TABLE `categories` (
   CONSTRAINT `fk_categories_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Transaction categories with user ownership';
 
+CREATE TABLE `relations` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int DEFAULT NULL,
+  `relation_code` varchar(50) NOT NULL,
+  `company_name` varchar(255) NOT NULL,
+  `relation_type` enum('debiteur','crediteur','beide') NOT NULL DEFAULT 'debiteur',
+  `contact_person` varchar(255) DEFAULT NULL,
+  `street` varchar(255) DEFAULT NULL,
+  `postal_code` varchar(20) DEFAULT NULL,
+  `city` varchar(100) DEFAULT NULL,
+  `country` varchar(100) DEFAULT 'Nederland',
+  `vat_number` varchar(50) DEFAULT NULL,
+  `coc_number` varchar(50) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `phone` varchar(50) DEFAULT NULL,
+  `website` varchar(255) DEFAULT NULL,
+  `iban` varchar(34) DEFAULT NULL,
+  `payment_term` int DEFAULT '30',
+  `credit_limit` decimal(10,2) DEFAULT NULL,
+  `default_vat_rate` decimal(5,2) DEFAULT NULL,
+  `currency` varchar(3) DEFAULT 'EUR',
+  `language` varchar(10) DEFAULT 'nl',
+  `notes` text,
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_by` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `relation_code` (`relation_code`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_relation_type` (`relation_type`),
+  CONSTRAINT `fk_relations_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Business relations (debitors, creditors) with company details';
+
 CREATE TABLE `transactions` (
   `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int DEFAULT NULL,

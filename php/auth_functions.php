@@ -18,7 +18,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require 'config.php';
+require_once 'config.php';
 
 /**
  * Get base URL for redirects (handles both local and production environments)
@@ -714,6 +714,37 @@ function generate_next_invoice_number($user_id = null) {
 }
 
 /**
+ * Get applicable VAT rates for a specific date
+ */
+function get_vat_rates_for_date($pdo, $date) {
+    $stmt = $pdo->prepare("
+        SELECT
+            rate,
+            name,
+            MAX(description) as description
+        FROM vat_rates
+        WHERE is_active = TRUE
+          AND effective_from <= ?
+          AND (effective_to IS NULL OR effective_to >= ?)
+        GROUP BY rate, name
+        ORDER BY rate DESC
+    ");
+    $stmt->execute([$date, $date]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Get the category ID for "Inkomsten" (system category)
+ */
+function get_inkomsten_category_id() {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT id FROM categories WHERE name = 'Inkomsten' AND is_system = 1 LIMIT 1");
+    $stmt->execute();
+    $id = $stmt->fetchColumn();
+    return $id ?: 1; // fallback to 1 for backward compatibility
+}
+
+/**
  * Generate a CSRF token and store it in the session
  */
 function generate_csrf_token() {
@@ -755,9 +786,6 @@ function csrf_field() {
     return '<input type="hidden" name="csrf_token" value="' . generate_csrf_token() . '">';
 }
 
-/**
- * Validate session on each request
- */
 /**
  * Validate session on each request
  */
