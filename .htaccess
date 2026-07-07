@@ -1,0 +1,27 @@
+# Beveiliging: blokkeer publieke toegang tot gevoelige mappen en bestanden.
+# Wordt in de docroot geplaatst; werkt omdat de apache-vhost AllowOverride All heeft.
+# De app zelf gebruikt alleen: root-*.php + favicon.svg, css/style.css,
+# php/*.php (endpoints) en pdf/invoice_pdf.php. Al het onderstaande is daarbuiten.
+
+# --- Geen directory-listing (voorkomt dat mappen hun inhoud tonen) ---
+Options -Indexes
+
+# --- Gevoelige mappen (geen directe endpoints) ---
+RedirectMatch 403 (?i)^/sql/
+RedirectMatch 403 (?i)^/\.git/
+RedirectMatch 403 (?i)^/\.a0proj/
+
+# --- Gevoelige bestandstypes overal in de boom ---
+<FilesMatch "(?i)\.(sql|sql\.bak|sh|md|tgz|tar\.gz|bak|tmp|log|exp|imp)$">
+    Require all denied
+</FilesMatch>
+
+# --- Alleen-include PHP-bestanden (geen directe endpoints): directe HTTP-toegang nutteloos/risicovol ---
+<FilesMatch "(?i)^(config|auth_functions|header|footer|page_header|theme_init|theme_toggle|receipt_functions)\.php$">
+    Require all denied
+</FilesMatch>
+
+# --- Dotfiles (.gitignore, .gitattributes, .DS_Store, .a0proj, etc.) ---
+<FilesMatch "(?i)^\..*">
+    Require all denied
+</FilesMatch>
