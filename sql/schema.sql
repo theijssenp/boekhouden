@@ -77,15 +77,18 @@ CREATE TABLE `transactions` (
   `vat_percentage` decimal(5,2) DEFAULT '0.00',
   `vat_included` tinyint(1) DEFAULT '0',
   `vat_deductible` tinyint(1) DEFAULT '0',
+  `relation_id` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `invoice_number` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `category_id` (`category_id`),
   KEY `idx_invoice_number` (`invoice_number`),
   KEY `idx_user_id` (`user_id`),
+  KEY `idx_relation_id` (`relation_id`),
   KEY `idx_transactions_user_date` (`user_id`,`date`),
   KEY `idx_transactions_user_type` (`user_id`,`type`),
   CONSTRAINT `fk_transactions_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_transactions_relation_id` FOREIGN KEY (`relation_id`) REFERENCES `relations` (`id`) ON DELETE SET NULL,
   CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=192 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Financial transactions with user ownership';
 
