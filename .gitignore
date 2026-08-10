@@ -33,6 +33,9 @@ PROMPT.md
 
 dump.sql
 config.php
+
+# Geuploade bonnetjes (staan op het filesystem, horen niet in git)
+storage/
 VERBETERINGEN.md
 README_NEW_FEATURES.md
 PDF_FACTUUR_README.md

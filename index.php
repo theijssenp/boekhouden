@@ -378,7 +378,7 @@ include 'php/page_header.php';
                         </td>
                         <td><?php echo htmlspecialchars($t['category'] ?: 'Geen categorie'); ?></td>
                         <td>
-                            <?php if (!empty($t['receipt_blob'])): ?>
+                            <?php if (!empty($t['receipt_path'])): ?>
                             <a href="php/view_receipt.php?id=<?php echo $t['id']; ?>"
                                target="_blank"
                                title="Bonnetje bekijken: <?php echo htmlspecialchars($t['receipt_original_name'] ?? ''); ?>"

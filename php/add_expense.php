@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             $validation = validate_receipt_upload($_FILES['receipt']);
             if ($validation['valid']) {
-                $receipt_data = process_receipt_upload($_FILES['receipt']);
+                $receipt_data = store_receipt_file($_FILES['receipt']);
                 if ($receipt_data) {
                     save_receipt_to_transaction($pdo, $transaction_id, $receipt_data, $user_id, $is_admin);
                 }

@@ -88,23 +88,7 @@ if ($is_admin) {
     $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Function to get applicable VAT rates for a specific date
-function get_vat_rates_for_date($pdo, $date) {
-    $stmt = $pdo->prepare("
-        SELECT
-            rate,
-            name,
-            MAX(description) as description
-        FROM vat_rates
-        WHERE is_active = TRUE
-          AND effective_from <= ?
-          AND (effective_to IS NULL OR effective_to >= ?)
-        GROUP BY rate, name
-        ORDER BY rate DESC
-    ");
-    $stmt->execute([$date, $date]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+// get_vat_rates_for_date() staat in auth_functions.php
 
 // Get VAT rates for the transaction date
 $transaction_date = $transaction['date'];
@@ -146,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Remove receipt if checkbox is checked
     if (isset($_POST['remove_receipt']) && $_POST['remove_receipt'] == 1) {
-        if (!empty($transaction['receipt_blob'])) {
+        if (!empty($transaction['receipt_path'])) {
             remove_receipt_from_transaction($pdo, $id, $user_id, $is_admin);
         }
     }
@@ -155,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (!empty($_FILES['receipt']['name'])) {
         $validation = validate_receipt_upload($_FILES['receipt']);
         if ($validation['valid']) {
-            $receipt_data = process_receipt_upload($_FILES['receipt']);
+            $receipt_data = store_receipt_file($_FILES['receipt']);
             if ($receipt_data) {
                 save_receipt_to_transaction($pdo, $id, $receipt_data, $user_id, $is_admin);
             }
@@ -304,7 +288,7 @@ include 'page_header.php';
                     <label for="receipt">
                         <i class="fas fa-receipt"></i> Bonnetje <span>(optioneel)</span>
                     </label>
-                    <?php if (!empty($transaction['receipt_blob'])): ?>
+                    <?php if (!empty($transaction['receipt_path'])): ?>
                     <div class="receipt-preview">
                         <a href="view_receipt.php?id=<?php echo $transaction['id']; ?>"
                            target="_blank"
@@ -324,7 +308,7 @@ include 'page_header.php';
                     <input type="file" id="receipt" name="receipt"
                            class="form-control"
                            accept="image/*,application/pdf"
-                           <?php echo empty($transaction['receipt_blob']) ? 'capture="environment"' : ''; ?>>
+                           <?php echo empty($transaction['receipt_path']) ? 'capture="environment"' : ''; ?>>
                     <small class="form-text">
                         Toegestane formaten: JPG, PNG, GIF, PDF (max 5MB).
                     </small>

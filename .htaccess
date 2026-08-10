@@ -10,6 +10,8 @@ Options -Indexes
 RedirectMatch 403 (?i)^/sql/
 RedirectMatch 403 (?i)^/\.git/
 RedirectMatch 403 (?i)^/\.a0proj/
+# Bonnetjes: alleen bereikbaar via php/view_receipt.php, dat de rechten controleert.
+RedirectMatch 403 (?i)^/storage/
 
 # --- Gevoelige bestandstypes overal in de boom ---
 <FilesMatch "(?i)\.(sql|sql\.bak|sh|md|tgz|tar\.gz|bak|tmp|log|exp|imp)$">

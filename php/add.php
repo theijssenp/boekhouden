@@ -31,23 +31,7 @@ if ($is_admin) {
 // Get VAT rates for the default date (today)
 $default_date = date('Y-m-d');
 
-// Function to get applicable VAT rates for a specific date
-function get_vat_rates_for_date($pdo, $date) {
-    $stmt = $pdo->prepare("
-        SELECT
-            rate,
-            name,
-            MAX(description) as description
-        FROM vat_rates
-        WHERE is_active = TRUE
-          AND effective_from <= ?
-          AND (effective_to IS NULL OR effective_to >= ?)
-        GROUP BY rate, name
-        ORDER BY rate DESC
-    ");
-    $stmt->execute([$date, $date]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+// get_vat_rates_for_date() staat in auth_functions.php
 
 $vat_rates = get_vat_rates_for_date($pdo, $default_date);
 

@@ -23,7 +23,7 @@ if (!$id) {
     exit;
 }
 
-// Clear receipt BLOB from transaction before deletion
+// Verwijder het bonnetje van het filesystem voordat de rij verdwijnt
 require 'receipt_functions.php';
 remove_receipt_from_transaction($pdo, $id, $user_id, $is_admin);
 
