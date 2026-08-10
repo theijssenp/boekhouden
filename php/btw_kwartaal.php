@@ -90,20 +90,7 @@ if ($is_admin) {
                 SELECT
                     t.*,
                     c.name as category,
-                    -- Calculate VAT amounts
-                    CASE
-                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                            t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
-                        WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
-                            t.amount * (t.vat_percentage / 100)
-                        ELSE 0
-                    END as vat_amount,
-                    -- Calculate base amount
-                    CASE
-                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                            t.amount / (1 + (t.vat_percentage / 100))
-                        ELSE t.amount
-                    END as base_amount,
+                    t.amount_excl as base_amount,
                     -- Get VAT rate name
                     COALESCE(
                         (SELECT vr.name
@@ -132,20 +119,7 @@ if ($is_admin) {
                 SELECT
                     t.*,
                     c.name as category,
-                    -- Calculate VAT amounts
-                    CASE
-                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                            t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
-                        WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
-                            t.amount * (t.vat_percentage / 100)
-                        ELSE 0
-                    END as vat_amount,
-                    -- Calculate base amount
-                    CASE
-                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                            t.amount / (1 + (t.vat_percentage / 100))
-                        ELSE t.amount
-                    END as base_amount,
+                    t.amount_excl as base_amount,
                     CONCAT(t.vat_percentage, '%') as vat_rate_name
                 FROM transactions t
                 LEFT JOIN categories c ON t.category_id = c.id
@@ -174,20 +148,7 @@ if ($is_admin) {
                 SELECT
                     t.*,
                     c.name as category,
-                    -- Calculate VAT amounts
-                    CASE
-                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                            t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
-                        WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
-                            t.amount * (t.vat_percentage / 100)
-                        ELSE 0
-                    END as vat_amount,
-                    -- Calculate base amount
-                    CASE
-                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                            t.amount / (1 + (t.vat_percentage / 100))
-                        ELSE t.amount
-                    END as base_amount,
+                    t.amount_excl as base_amount,
                     -- Get VAT rate name
                     COALESCE(
                         (SELECT vr.name
@@ -216,20 +177,7 @@ if ($is_admin) {
                 SELECT
                     t.*,
                     c.name as category,
-                    -- Calculate VAT amounts
-                    CASE
-                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                            t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
-                        WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
-                            t.amount * (t.vat_percentage / 100)
-                        ELSE 0
-                    END as vat_amount,
-                    -- Calculate base amount
-                    CASE
-                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                            t.amount / (1 + (t.vat_percentage / 100))
-                        ELSE t.amount
-                    END as base_amount,
+                    t.amount_excl as base_amount,
                     CONCAT(t.vat_percentage, '%') as vat_rate_name
                 FROM transactions t
                 LEFT JOIN categories c ON t.category_id = c.id
@@ -310,26 +258,10 @@ if ($vatColumnsExist) {
                         END
                     ) as vat_rate_name,
                     t.type,
-                    SUM(t.amount) as total_amount,
+                    SUM(t.amount_incl) as total_amount,
                     COUNT(*) as count,
-                    -- Calculate VAT amounts properly
-                    SUM(
-                        CASE
-                            WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                                t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
-                            WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
-                                t.amount * (t.vat_percentage / 100)
-                            ELSE 0
-                        END
-                    ) as total_vat_amount,
-                    -- Calculate base amount (excl. VAT)
-                    SUM(
-                        CASE
-                            WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                                t.amount / (1 + (t.vat_percentage / 100))
-                            ELSE t.amount
-                        END
-                    ) as base_amount
+                    SUM(t.vat_amount) as total_vat_amount,
+                    SUM(t.amount_excl) as base_amount
                 FROM transactions t
                 WHERE t.date BETWEEN ? AND ? AND t.vat_percentage IS NOT NULL
                 GROUP BY t.vat_percentage, vat_rate_name, t.type
@@ -342,26 +274,10 @@ if ($vatColumnsExist) {
                     vat_percentage,
                     CONCAT(vat_percentage, '%') as vat_rate_name,
                     type,
-                    SUM(amount) as total_amount,
+                    SUM(amount_incl) as total_amount,
                     COUNT(*) as count,
-                    -- Calculate VAT amounts properly
-                    SUM(
-                        CASE
-                            WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                                amount - (amount / (1 + (vat_percentage / 100)))
-                            WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                                amount * (vat_percentage / 100)
-                            ELSE 0
-                        END
-                    ) as total_vat_amount,
-                    -- Calculate base amount (excl. VAT)
-                    SUM(
-                        CASE
-                            WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                                amount / (1 + (vat_percentage / 100))
-                            ELSE amount
-                        END
-                    ) as base_amount
+                    SUM(vat_amount) as total_vat_amount,
+                    SUM(amount_excl) as base_amount
                 FROM transactions
                 WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL
                 GROUP BY vat_percentage, type
@@ -393,26 +309,10 @@ if ($vatColumnsExist) {
                         END
                     ) as vat_rate_name,
                     t.type,
-                    SUM(t.amount) as total_amount,
+                    SUM(t.amount_incl) as total_amount,
                     COUNT(*) as count,
-                    -- Calculate VAT amounts properly
-                    SUM(
-                        CASE
-                            WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                                t.amount - (t.amount / (1 + (t.vat_percentage / 100)))
-                            WHEN t.vat_included = FALSE AND t.vat_percentage > 0 THEN
-                                t.amount * (t.vat_percentage / 100)
-                            ELSE 0
-                        END
-                    ) as total_vat_amount,
-                    -- Calculate base amount (excl. VAT)
-                    SUM(
-                        CASE
-                            WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                                t.amount / (1 + (t.vat_percentage / 100))
-                            ELSE t.amount
-                        END
-                    ) as base_amount
+                    SUM(t.vat_amount) as total_vat_amount,
+                    SUM(t.amount_excl) as base_amount
                 FROM transactions t
                 WHERE t.date BETWEEN ? AND ? AND t.vat_percentage IS NOT NULL AND t.user_id = ?
                 GROUP BY t.vat_percentage, vat_rate_name, t.type
@@ -426,26 +326,10 @@ if ($vatColumnsExist) {
                     vat_percentage,
                     CONCAT(vat_percentage, '%') as vat_rate_name,
                     type,
-                    SUM(amount) as total_amount,
+                    SUM(amount_incl) as total_amount,
                     COUNT(*) as count,
-                    -- Calculate VAT amounts properly
-                    SUM(
-                        CASE
-                            WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                                amount - (amount / (1 + (vat_percentage / 100)))
-                            WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                                amount * (vat_percentage / 100)
-                            ELSE 0
-                        END
-                    ) as total_vat_amount,
-                    -- Calculate base amount (excl. VAT)
-                    SUM(
-                        CASE
-                            WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                                amount / (1 + (vat_percentage / 100))
-                            ELSE amount
-                        END
-                    ) as base_amount
+                    SUM(vat_amount) as total_vat_amount,
+                    SUM(amount_excl) as base_amount
                 FROM transactions
                 WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL AND user_id = ?
                 GROUP BY vat_percentage, type
@@ -482,16 +366,8 @@ if ($vatColumnsExist) {
                 YEAR(date) as year,
                 vat_percentage,
                 type,
-                SUM(
-                    CASE
-                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                            amount - (amount / (1 + (vat_percentage / 100)))
-                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                            amount * (vat_percentage / 100)
-                        ELSE 0
-                    END
-                ) as vat_amount,
-                SUM(amount) as total_amount,
+                SUM(vat_amount) as vat_amount,
+                SUM(amount_incl) as total_amount,
                 COUNT(*) as count
             FROM transactions
             WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL
@@ -507,16 +383,8 @@ if ($vatColumnsExist) {
                 YEAR(date) as year,
                 vat_percentage,
                 type,
-                SUM(
-                    CASE
-                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                            amount - (amount / (1 + (vat_percentage / 100)))
-                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                            amount * (vat_percentage / 100)
-                        ELSE 0
-                    END
-                ) as vat_amount,
-                SUM(amount) as total_amount,
+                SUM(vat_amount) as vat_amount,
+                SUM(amount_incl) as total_amount,
                 COUNT(*) as count
             FROM transactions
             WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL AND user_id = ?
@@ -538,31 +406,13 @@ if ($vatColumnsExist) {
                 MONTH(date) as month,
                 YEAR(date) as year,
                 SUM(CASE WHEN type = 'inkomst' THEN
-                    CASE
-                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                            amount - (amount / (1 + (vat_percentage / 100)))
-                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                            amount * (vat_percentage / 100)
-                        ELSE 0
-                    END
+                    vat_amount
                     ELSE 0 END) as vat_income,
                 SUM(CASE WHEN type = 'uitgave' AND vat_deductible = TRUE THEN
-                    CASE
-                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                            amount - (amount / (1 + (vat_percentage / 100)))
-                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                            amount * (vat_percentage / 100)
-                        ELSE 0
-                    END
+                    vat_amount
                     ELSE 0 END) as vat_expense_deductible,
                 SUM(CASE WHEN type = 'uitgave' AND (vat_deductible = FALSE OR vat_deductible IS NULL) THEN
-                    CASE
-                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                            amount - (amount / (1 + (vat_percentage / 100)))
-                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                            amount * (vat_percentage / 100)
-                        ELSE 0
-                    END
+                    vat_amount
                     ELSE 0 END) as vat_expense_nondeductible
             FROM transactions
             WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL
@@ -577,31 +427,13 @@ if ($vatColumnsExist) {
                 MONTH(date) as month,
                 YEAR(date) as year,
                 SUM(CASE WHEN type = 'inkomst' THEN
-                    CASE
-                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                            amount - (amount / (1 + (vat_percentage / 100)))
-                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                            amount * (vat_percentage / 100)
-                        ELSE 0
-                    END
+                    vat_amount
                     ELSE 0 END) as vat_income,
                 SUM(CASE WHEN type = 'uitgave' AND vat_deductible = TRUE THEN
-                    CASE
-                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                            amount - (amount / (1 + (vat_percentage / 100)))
-                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                            amount * (vat_percentage / 100)
-                        ELSE 0
-                    END
+                    vat_amount
                     ELSE 0 END) as vat_expense_deductible,
                 SUM(CASE WHEN type = 'uitgave' AND (vat_deductible = FALSE OR vat_deductible IS NULL) THEN
-                    CASE
-                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                            amount - (amount / (1 + (vat_percentage / 100)))
-                        WHEN vat_included = FALSE AND vat_percentage > 0 THEN
-                            amount * (vat_percentage / 100)
-                        ELSE 0
-                    END
+                    vat_amount
                     ELSE 0 END) as vat_expense_nondeductible
             FROM transactions
             WHERE date BETWEEN ? AND ? AND vat_percentage IS NOT NULL AND user_id = ?
@@ -663,20 +495,20 @@ include 'page_header.php';
         <div class="card-grid">
             <div class="card">
                 <h3 class="card-title">Omzet (excl. BTW)</h3>
-                <div class="positive amount">€<?php echo number_format($vatSummary['total_income'], 2); ?></div>
+                <div class="positive amount"><?php echo format_euro($vatSummary['total_income']); ?></div>
                 <p class="neutral">Totaal inkomsten dit kwartaal</p>
             </div>
             
             <div class="card">
                 <h3 class="card-title">Kosten (excl. BTW)</h3>
-                <div class="negative amount">€<?php echo number_format($vatSummary['total_expenses'], 2); ?></div>
+                <div class="negative amount"><?php echo format_euro($vatSummary['total_expenses']); ?></div>
                 <p class="neutral">Totaal uitgaven dit kwartaal</p>
             </div>
             
             <div class="card">
                 <h3 class="card-title">Af te dragen BTW</h3>
                 <div class="<?php echo $vatSummary['vat_on_income'] >= 0 ? 'negative' : 'positive'; ?> amount">
-                    €<?php echo number_format($vatSummary['vat_on_income'], 2); ?>
+                    <?php echo format_euro($vatSummary['vat_on_income']); ?>
                 </div>
                 <p class="neutral">
                     <?php echo $vatSummary['vat_on_income'] >= 0 ? 'BTW over inkomsten' : 'BTW te ontvangen (creditnota\'s)'; ?>
@@ -686,7 +518,7 @@ include 'page_header.php';
             <div class="card">
                 <h3 class="card-title">Voorbelasting BTW</h3>
                 <div class="<?php echo $vatSummary['vat_on_expenses'] >= 0 ? 'positive' : 'negative'; ?> amount">
-                    €<?php echo number_format($vatSummary['vat_on_expenses'], 2); ?>
+                    <?php echo format_euro($vatSummary['vat_on_expenses']); ?>
                 </div>
                 <p class="neutral">
                     <?php echo $vatSummary['vat_on_expenses'] >= 0 ? 'BTW over aftrekbare kosten' : 'BTW terug te betalen (credits)'; ?>
@@ -696,7 +528,7 @@ include 'page_header.php';
             <div class="card" style="grid-column: span 2; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: var(--text-inverse);">
                 <h3 class="card-title" style="color: var(--text-inverse);">Netto BTW verschuldigd</h3>
                 <div class="amount" style="font-size: 2.5rem; color: var(--text-inverse);">
-                    €<?php echo number_format($vatSummary['net_vat'], 2); ?>
+                    <?php echo format_euro($vatSummary['net_vat']); ?>
                 </div>
                 <p style="font-size: 1.2rem; margin-top: 10px;">
                     <?php if ($vatSummary['net_vat'] > 0): ?>
@@ -757,10 +589,10 @@ include 'page_header.php';
                                 </span>
                             </td>
                             <td><?php echo $row['count']; ?></td>
-                            <td>€<?php echo number_format($row['total_amount'], 2); ?></td>
-                            <td>€<?php echo isset($row['base_amount']) ? number_format($row['base_amount'], 2) : number_format($row['total_amount'] / (1 + ($row['vat_percentage']/100)), 2); ?></td>
+                            <td><?php echo format_euro($row['total_amount']); ?></td>
+                            <td><?php echo format_euro($row['base_amount']); ?></td>
                             <td>
-                                €<?php echo isset($row['total_vat_amount']) ? number_format($row['total_vat_amount'], 2) : number_format($row['total_amount'] * ($row['vat_percentage'] / 100), 2); ?>
+                                <?php echo format_euro($row['total_vat_amount']); ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -794,19 +626,19 @@ include 'page_header.php';
                         <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 0.5rem;">
                             <div>
                                 <small class="neutral">Inkomsten:</small>
-                                <div class="positive">€<?php echo number_format($incomeTotal, 2); ?></div>
+                                <div class="positive"><?php echo format_euro($incomeTotal); ?></div>
                             </div>
                             <div>
                                 <small class="neutral">Uitgaven:</small>
-                                <div class="negative">€<?php echo number_format($expenseTotal, 2); ?></div>
+                                <div class="negative"><?php echo format_euro($expenseTotal); ?></div>
                             </div>
                             <div>
                                 <small class="neutral">BTW inkomsten:</small>
-                                <div>€<?php echo number_format($vatIncome, 2); ?></div>
+                                <div><?php echo format_euro($vatIncome); ?></div>
                             </div>
                             <div>
                                 <small class="neutral">BTW uitgaven:</small>
-                                <div>€<?php echo number_format($vatExpense, 2); ?></div>
+                                <div><?php echo format_euro($vatExpense); ?></div>
                             </div>
                         </div>
                     </div>
@@ -909,13 +741,13 @@ include 'page_header.php';
                             ?>
                             <tr>
                                 <td><strong><?php echo $rate; ?>%</strong></td>
-                                <td class="positive">€<?php echo number_format($data['income'], 2); ?></td>
-                                <td class="negative">€<?php echo number_format($data['expense'], 2); ?></td>
-                                <td class="negative">€<?php echo number_format($data['vat_income'], 2); ?></td>
-                                <td class="positive">€<?php echo number_format($data['vat_expense'], 2); ?></td>
-                                <td>€<?php echo number_format($data['vat_amount'], 2); ?></td>
+                                <td class="positive"><?php echo format_euro($data['income']); ?></td>
+                                <td class="negative"><?php echo format_euro($data['expense']); ?></td>
+                                <td class="negative"><?php echo format_euro($data['vat_income']); ?></td>
+                                <td class="positive"><?php echo format_euro($data['vat_expense']); ?></td>
+                                <td><?php echo format_euro($data['vat_amount']); ?></td>
                                 <td class="<?php echo $netVat >= 0 ? 'negative' : 'positive'; ?>">
-                                    <strong>€<?php echo number_format($netVat, 2); ?></strong>
+                                    <strong><?php echo format_euro($netVat); ?></strong>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -923,13 +755,13 @@ include 'page_header.php';
                         <tfoot style="background: var(--bg-table-stripe); font-weight: bold;">
                             <tr>
                                 <td><strong>Totaal <?php echo $monthData['name']; ?>:</strong></td>
-                                <td class="positive">€<?php echo number_format($monthTotalIncome, 2); ?></td>
-                                <td class="negative">€<?php echo number_format($monthTotalExpense, 2); ?></td>
-                                <td class="negative">€<?php echo number_format($monthTotalVatIncome, 2); ?></td>
-                                <td class="positive">€<?php echo number_format($monthTotalVatExpense, 2); ?></td>
-                                <td>€<?php echo number_format($monthTotalVatIncome + $monthTotalVatExpense, 2); ?></td>
+                                <td class="positive"><?php echo format_euro($monthTotalIncome); ?></td>
+                                <td class="negative"><?php echo format_euro($monthTotalExpense); ?></td>
+                                <td class="negative"><?php echo format_euro($monthTotalVatIncome); ?></td>
+                                <td class="positive"><?php echo format_euro($monthTotalVatExpense); ?></td>
+                                <td><?php echo format_euro($monthTotalVatIncome + $monthTotalVatExpense); ?></td>
                                 <td class="<?php echo ($monthTotalVatIncome - $monthTotalVatExpense) >= 0 ? 'negative' : 'positive'; ?>">
-                                    <strong>€<?php echo number_format($monthTotalVatIncome - $monthTotalVatExpense, 2); ?></strong>
+                                    <strong><?php echo format_euro($monthTotalVatIncome - $monthTotalVatExpense); ?></strong>
                                 </td>
                             </tr>
                         </tfoot>
@@ -940,24 +772,24 @@ include 'page_header.php';
                 <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 1rem;">
                     <div class="card" style="background: var(--gray-light); padding: 0.75rem;">
                         <small class="neutral">Totaal Inkomsten</small>
-                        <div class="positive" style="font-size: 1.2rem;">€<?php echo number_format($monthTotalIncome, 2); ?></div>
+                        <div class="positive" style="font-size: 1.2rem;"><?php echo format_euro($monthTotalIncome); ?></div>
                     </div>
                     <div class="card" style="background: var(--gray-light); padding: 0.75rem;">
                         <small class="neutral">Totaal Uitgaven</small>
-                        <div class="negative" style="font-size: 1.2rem;">€<?php echo number_format($monthTotalExpense, 2); ?></div>
+                        <div class="negative" style="font-size: 1.2rem;"><?php echo format_euro($monthTotalExpense); ?></div>
                     </div>
                     <div class="card" style="background: var(--gray-light); padding: 0.75rem;">
                         <small class="neutral">BTW over Inkomsten</small>
-                        <div class="negative" style="font-size: 1.2rem;">€<?php echo number_format($monthTotalVatIncome, 2); ?></div>
+                        <div class="negative" style="font-size: 1.2rem;"><?php echo format_euro($monthTotalVatIncome); ?></div>
                     </div>
                     <div class="card" style="background: var(--gray-light); padding: 0.75rem;">
                         <small class="neutral">BTW over Uitgaven</small>
-                        <div class="positive" style="font-size: 1.2rem;">€<?php echo number_format($monthTotalVatExpense, 2); ?></div>
+                        <div class="positive" style="font-size: 1.2rem;"><?php echo format_euro($monthTotalVatExpense); ?></div>
                     </div>
                     <div class="card" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: var(--text-inverse); padding: 0.75rem; grid-column: span 2;">
                         <small style="color: rgba(255,255,255,0.9);">Netto BTW <?php echo $monthData['name']; ?></small>
                         <div style="font-size: 1.5rem; color: var(--text-inverse);">
-                            €<?php echo number_format($monthTotalVatIncome - $monthTotalVatExpense, 2); ?>
+                            <?php echo format_euro($monthTotalVatIncome - $monthTotalVatExpense); ?>
                         </div>
                     </div>
                 </div>
@@ -987,24 +819,24 @@ include 'page_header.php';
                     ?>
                     <div style="padding: 1rem;">
                         <small style="color: rgba(255,255,255,0.9);">Totaal Inkomsten Kwartaal</small>
-                        <div style="font-size: 1.5rem; color: #a3e4d7;">€<?php echo number_format($quarterTotalIncome, 2); ?></div>
+                        <div style="font-size: 1.5rem; color: #a3e4d7;"><?php echo format_euro($quarterTotalIncome); ?></div>
                     </div>
                     <div style="padding: 1rem;">
                         <small style="color: rgba(255,255,255,0.9);">Totaal Uitgaven Kwartaal</small>
-                        <div style="font-size: 1.5rem; color: #f5b7b1;">€<?php echo number_format($quarterTotalExpense, 2); ?></div>
+                        <div style="font-size: 1.5rem; color: #f5b7b1;"><?php echo format_euro($quarterTotalExpense); ?></div>
                     </div>
                     <div style="padding: 1rem;">
                         <small style="color: rgba(255,255,255,0.9);">BTW over Inkomsten</small>
-                        <div style="font-size: 1.5rem; color: #f5b7b1;">€<?php echo number_format($quarterTotalVatIncome, 2); ?></div>
+                        <div style="font-size: 1.5rem; color: #f5b7b1;"><?php echo format_euro($quarterTotalVatIncome); ?></div>
                     </div>
                     <div style="padding: 1rem;">
                         <small style="color: rgba(255,255,255,0.9);">BTW over Uitgaven</small>
-                        <div style="font-size: 1.5rem; color: #a3e4d7;">€<?php echo number_format($quarterTotalVatExpense, 2); ?></div>
+                        <div style="font-size: 1.5rem; color: #a3e4d7;"><?php echo format_euro($quarterTotalVatExpense); ?></div>
                     </div>
                     <div style="padding: 1rem; grid-column: span 2; text-align: center;">
                         <small style="color: rgba(255,255,255,0.9);">Netto BTW Kwartaal</small>
                         <div style="font-size: 2rem; color: var(--text-inverse);">
-                            €<?php echo number_format($quarterNetVat, 2); ?>
+                            <?php echo format_euro($quarterNetVat); ?>
                         </div>
                         <div style="margin-top: 0.5rem;">
                             <?php if ($quarterNetVat > 0): ?>
@@ -1060,11 +892,11 @@ include 'page_header.php';
                         ?>
                         <tr>
                             <td><strong><?php echo $monthNames[$month] ?? "Maand $month"; ?></strong></td>
-                            <td class="negative">€<?php echo number_format($vatIncome, 2); ?></td>
-                            <td class="positive">€<?php echo number_format($vatExpenseDeductible, 2); ?></td>
-                            <td class="neutral">€<?php echo number_format($vatExpenseNonDeductible, 2); ?></td>
+                            <td class="negative"><?php echo format_euro($vatIncome); ?></td>
+                            <td class="positive"><?php echo format_euro($vatExpenseDeductible); ?></td>
+                            <td class="neutral"><?php echo format_euro($vatExpenseNonDeductible); ?></td>
                             <td class="<?php echo $netVatMonth >= 0 ? 'negative' : 'positive'; ?>">
-                                <strong>€<?php echo number_format($netVatMonth, 2); ?></strong>
+                                <strong><?php echo format_euro($netVatMonth); ?></strong>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -1072,17 +904,17 @@ include 'page_header.php';
                     <tfoot>
                         <tr style="background: var(--gray-light); font-weight: bold;">
                             <td>Totaal Kwartaal:</td>
-                            <td class="negative">€<?php echo number_format($vatSummary['vat_on_income'], 2); ?></td>
-                            <td class="positive">€<?php echo number_format($vatSummary['vat_on_expenses'], 2); ?></td>
+                            <td class="negative"><?php echo format_euro($vatSummary['vat_on_income']); ?></td>
+                            <td class="positive"><?php echo format_euro($vatSummary['vat_on_expenses']); ?></td>
                             <td class="neutral">€<?php
                                 $nonDeductibleTotal = 0;
                                 foreach ($monthlySummary as $monthRow) {
                                     $nonDeductibleTotal += $monthRow['vat_expense_nondeductible'] ?? 0;
                                 }
-                                echo number_format($nonDeductibleTotal, 2);
+                                echo format_amount($nonDeductibleTotal);
                             ?></td>
                             <td class="<?php echo $vatSummary['net_vat'] >= 0 ? 'negative' : 'positive'; ?>">
-                                <strong>€<?php echo number_format($vatSummary['net_vat'], 2); ?></strong>
+                                <strong><?php echo format_euro($vatSummary['net_vat']); ?></strong>
                             </td>
                         </tr>
                     </tfoot>
@@ -1123,7 +955,7 @@ include 'page_header.php';
                                     bottom: 0;
                                     left: 0;
                                     border-radius: 4px 4px 0 0;
-                                " title="BTW inkomsten: €<?php echo number_format($vatIncome, 2); ?>"></div>
+                                " title="BTW inkomsten: <?php echo format_euro($vatIncome); ?>"></div>
                                 <?php endif; ?>
                                 
                                 <!-- BTW over kosten (green) -->
@@ -1136,7 +968,7 @@ include 'page_header.php';
                                     bottom: 0;
                                     left: 35%;
                                     border-radius: 4px 4px 0 0;
-                                " title="BTW kosten: €<?php echo number_format($vatExpenseDeductible, 2); ?>"></div>
+                                " title="BTW kosten: <?php echo format_euro($vatExpenseDeductible); ?>"></div>
                                 <?php endif; ?>
                                 
                                 <!-- Netto BTW (blue/orange) -->
@@ -1149,12 +981,12 @@ include 'page_header.php';
                                     bottom: 0;
                                     left: 70%;
                                     border-radius: 4px 4px 0 0;
-                                " title="Netto BTW: €<?php echo number_format($netVatMonth, 2); ?>"></div>
+                                " title="Netto BTW: <?php echo format_euro($netVatMonth); ?>"></div>
                                 <?php endif; ?>
                             </div>
                             <div style="margin-top: 10px; font-size: 0.8rem; text-align: center;">
                                 <?php echo substr($monthNames[$month] ?? "M$month", 0, 3); ?><br>
-                                <small>€<?php echo number_format($netVatMonth, 0); ?></small>
+                                <small><?php echo format_euro($netVatMonth, 0); ?></small>
                             </div>
                         </div>
                         <?php endforeach; ?>
@@ -1220,7 +1052,7 @@ include 'page_header.php';
                                     echo $t['amount'] >= 0 ? 'negative' : 'positive';
                                 }
                             ?>">
-                                €<?php echo number_format($t['amount'], 2); ?>
+                                <?php echo format_euro($t['amount']); ?>
                             </td>
                             <td>
                                 <span class="<?php
@@ -1265,7 +1097,7 @@ include 'page_header.php';
                             <td>
                                 <?php
                                 if (isset($t['vat_amount']) && $t['vat_amount'] != 0) {
-                                    echo '€' . number_format($t['vat_amount'], 2);
+                                    echo format_euro($t['vat_amount']);
                                 } else {
                                     echo '€0,00';
                                 }

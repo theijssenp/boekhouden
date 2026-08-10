@@ -92,6 +92,27 @@ CREATE TABLE IF NOT EXISTS `transactions` (
   `vat_percentage` decimal(5,2) DEFAULT 0.00,
   `vat_included` tinyint(1) DEFAULT 0,
   `vat_deductible` tinyint(1) DEFAULT 0,
+  -- `amount` betekent afhankelijk van `vat_included` iets anders: bij 0 is
+  -- het het bedrag exclusief BTW, bij 1 inclusief. Deze drie kolommen maken
+  -- de splitsing per boeking expliciet, zodat rapportages niet zelf hoeven
+  -- te rekenen en er nooit twee verschillende uitkomsten kunnen ontstaan.
+  -- De database berekent ze; ze zijn niet te schrijven en kunnen dus niet
+  -- uit de pas lopen met `amount`.
+  -- Afronding gebeurt per boeking, want dat is het bedrag dat op de factuur
+  -- staat en in de aangifte terechtkomt.
+  `amount_excl` decimal(10,2) GENERATED ALWAYS AS (
+      CASE WHEN COALESCE(`vat_included`,0) = 1 AND COALESCE(`vat_percentage`,0) > 0
+           THEN ROUND(`amount` / (1 + `vat_percentage` / 100), 2)
+           ELSE `amount` END) STORED,
+  `vat_amount` decimal(10,2) GENERATED ALWAYS AS (
+      CASE WHEN COALESCE(`vat_percentage`,0) <= 0 THEN 0
+           WHEN COALESCE(`vat_included`,0) = 1
+           THEN `amount` - ROUND(`amount` / (1 + `vat_percentage` / 100), 2)
+           ELSE ROUND(`amount` * `vat_percentage` / 100, 2) END) STORED,
+  `amount_incl` decimal(10,2) GENERATED ALWAYS AS (
+      CASE WHEN COALESCE(`vat_percentage`,0) <= 0 THEN `amount`
+           WHEN COALESCE(`vat_included`,0) = 1 THEN `amount`
+           ELSE `amount` + ROUND(`amount` * `vat_percentage` / 100, 2) END) STORED,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `invoice_number` varchar(50) DEFAULT NULL,
   `relation_id` int(11) DEFAULT NULL,
@@ -270,6 +291,25 @@ CALL `_bh_drop_column_if_empty`('transactions', 'receipt_blob');
 CALL `_bh_add_column`('relations', 'is_active',
   '`is_active` tinyint(1) DEFAULT 1');
 
+-- Bedragen exclusief/inclusief BTW per boeking (zie toelichting bij de
+-- tabeldefinitie). Bestaande installaties krijgen ze hier alsnog.
+CALL `_bh_add_column`('transactions', 'amount_excl',
+  '`amount_excl` decimal(10,2) GENERATED ALWAYS AS (
+      CASE WHEN COALESCE(`vat_included`,0) = 1 AND COALESCE(`vat_percentage`,0) > 0
+           THEN ROUND(`amount` / (1 + `vat_percentage` / 100), 2)
+           ELSE `amount` END) STORED AFTER `vat_deductible`');
+CALL `_bh_add_column`('transactions', 'vat_amount',
+  '`vat_amount` decimal(10,2) GENERATED ALWAYS AS (
+      CASE WHEN COALESCE(`vat_percentage`,0) <= 0 THEN 0
+           WHEN COALESCE(`vat_included`,0) = 1
+           THEN `amount` - ROUND(`amount` / (1 + `vat_percentage` / 100), 2)
+           ELSE ROUND(`amount` * `vat_percentage` / 100, 2) END) STORED AFTER `amount_excl`');
+CALL `_bh_add_column`('transactions', 'amount_incl',
+  '`amount_incl` decimal(10,2) GENERATED ALWAYS AS (
+      CASE WHEN COALESCE(`vat_percentage`,0) <= 0 THEN `amount`
+           WHEN COALESCE(`vat_included`,0) = 1 THEN `amount`
+           ELSE `amount` + ROUND(`amount` * `vat_percentage` / 100, 2) END) STORED AFTER `vat_amount`');
+
 CALL `_bh_add_index`('transactions', 'idx_relation_id', 'KEY `idx_relation_id` (`relation_id`)');
 
 CALL `_bh_add_foreign_key`('transactions', 'fk_transactions_relation_id', 'relation_id', 'relations',
@@ -297,21 +337,16 @@ SELECT c.id, c.user_id, c.name, c.is_system,
 FROM categories c
 LEFT JOIN users u ON c.user_id = u.id;
 
+-- De view rekende de BTW zelf uit; dat gebeurt nu in de tabel zelf.
+-- `base_amount` blijft bestaan als alias voor `amount_excl`, zodat
+-- bestaande queries blijven werken.
 CREATE OR REPLACE VIEW `vat_calculations` AS
 SELECT t.id, t.date, t.description, t.amount, t.type, t.category_id,
        t.vat_percentage, t.vat_included, t.vat_deductible,
-       CASE
-         WHEN t.vat_included = 1 AND t.vat_percentage > 0
-           THEN t.amount - t.amount / (1 + t.vat_percentage / 100)
-         WHEN t.vat_included = 0 AND t.vat_percentage > 0
-           THEN t.amount * (t.vat_percentage / 100)
-         ELSE 0
-       END AS vat_amount,
-       CASE
-         WHEN t.vat_included = 1 AND t.vat_percentage > 0
-           THEN t.amount / (1 + t.vat_percentage / 100)
-         ELSE t.amount
-       END AS base_amount
+       t.vat_amount,
+       t.amount_excl AS base_amount,
+       t.amount_excl,
+       t.amount_incl
 FROM transactions t;
 
 -- ---------------------------------------------------------------------

@@ -18,9 +18,26 @@ if (!in_array($tab, $allowed_tabs)) {
     $tab = 'alle';
 }
 
-// Determine sorting parameters
+// Beschikbare boekjaren ophalen (alleen de jaren die de gebruiker mag zien)
+if ($is_admin) {
+    $year_stmt = $pdo->query("SELECT DISTINCT YEAR(date) AS jaar FROM transactions ORDER BY jaar DESC");
+} else {
+    $year_stmt = $pdo->prepare("SELECT DISTINCT YEAR(date) AS jaar FROM transactions WHERE user_id = ? ORDER BY jaar DESC");
+    $year_stmt->execute([$user_id]);
+}
+$available_years = array_map('intval', $year_stmt->fetchAll(PDO::FETCH_COLUMN));
+
+// Boekjaarfilter: standaard het meest recente jaar met boekingen.
+// Een boekhouder werkt vrijwel altijd binnen één boekjaar; alle jaren
+// door elkaar is zelden wat je wilt zien.
+$year = $_GET['jaar'] ?? ($available_years[0] ?? '');
+if ($year !== 'alle') {
+    $year = in_array((int)$year, $available_years, true) ? (int)$year : ($available_years[0] ?? 'alle');
+}
+
+// Determine sorting parameters. Standaard nieuwste boeking bovenaan.
 $sort_column = isset($_GET['sort']) ? $_GET['sort'] : 'date';
-$sort_order = isset($_GET['order']) ? $_GET['order'] : 'asc';
+$sort_order = isset($_GET['order']) ? $_GET['order'] : 'desc';
 
 // Validate sort column
 $allowed_columns = ['date', 'invoice_number', 'description', 'amount', 'type', 'category'];
@@ -42,7 +59,8 @@ $db_column_map = [
     'date' => 't.date',
     'invoice_number' => 't.invoice_number',
     'description' => 't.description',
-    'amount' => 't.amount',
+    // Sorteer op wat er in de kolom staat: het bedrag inclusief BTW
+    'amount' => 't.amount_incl',
     'type' => 't.type',
     'category' => 'c.name'
 ];
@@ -61,6 +79,12 @@ if ($tab === 'inkomsten') {
     $where_conditions[] = "t.type = 'inkomst'";
 } elseif ($tab === 'uitgaven') {
     $where_conditions[] = "t.type = 'uitgave'";
+}
+
+// Add boekjaar filter
+if ($year !== 'alle') {
+    $where_conditions[] = "YEAR(t.date) = ?";
+    $where_params[] = $year;
 }
 
 // Build SQL query with sorting, user filtering, tab filtering, and relation info
@@ -100,63 +124,122 @@ if ($is_admin) {
 }
 $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$totalInkomsten = 0;
-$totalUitgaven = 0;
+/*
+ * De kolom `amount` betekent afhankelijk van `vat_included` iets anders
+ * (excl. of incl. BTW). De database splitst dat per boeking uit in
+ * amount_excl / vat_amount / amount_incl - zie sql/schema.sql. Hier wordt
+ * dus alleen nog opgeteld, niet gerekend: er is precies een plek waar de
+ * BTW-splitsing is gedefinieerd.
+ *
+ * Omdat de splitsing per boeking op de cent is afgerond, telt het totaal
+ * hier exact op tot de bedragen die in de tabel per regel getoond worden.
+ */
+$nettoInkomsten = 0;   // omzet, exclusief BTW  -> dit is de W&V-regel
+$nettoUitgaven  = 0;   // kosten, exclusief BTW
+$brutoInkomsten = 0;
+$brutoUitgaven  = 0;
+$btwInkomsten   = 0;   // af te dragen BTW
+$btwVoorbelasting = 0; // terug te vorderen BTW (alleen aftrekbare)
+$zonderBon = 0;        // uitgaven zonder bonnetje
+
 foreach ($transactions as $t) {
     if ($t['type'] == 'inkomst') {
-        $totalInkomsten += $t['amount'];
+        $nettoInkomsten += $t['amount_excl'];
+        $brutoInkomsten += $t['amount_incl'];
+        $btwInkomsten   += $t['vat_amount'];
     } else {
-        $totalUitgaven += $t['amount'];
+        $nettoUitgaven += $t['amount_excl'];
+        $brutoUitgaven += $t['amount_incl'];
+        // Niet-aftrekbare BTW telt niet mee als voorbelasting
+        if (!empty($t['vat_deductible'])) {
+            $btwVoorbelasting += $t['vat_amount'];
+        }
+        if (empty($t['receipt_path'])) {
+            $zonderBon++;
+        }
     }
 }
-$balans = $totalInkomsten - $totalUitgaven;
 
-// Function to generate sort URL (preserve tab)
-function sort_url($column, $current_column, $current_order, $tab = 'alle') {
-    $order = 'asc';
-    if ($column == $current_column && $current_order == 'asc') {
-        $order = 'desc';
-    }
-    return "index.php?tab=$tab&sort=$column&order=$order";
-}
+$resultaat = $nettoInkomsten - $nettoUitgaven;   // resultaat excl. BTW
+$btwSaldo  = $btwInkomsten - $btwVoorbelasting;
 
-// Function to get sort indicator
-function sort_indicator($column, $current_column, $current_order) {
-    if ($column == $current_column) {
-        return $current_order == 'asc' ? '↑' : '↓';
+/**
+ * Genereert een sorteerbare kolomkop.
+ *
+ * Gebruikt een echte <a> in plaats van th[onclick], zodat de kop
+ * bereikbaar is met het toetsenbord, in een nieuw tabblad geopend kan
+ * worden, en via aria-sort door schermlezers wordt voorgelezen.
+ */
+function sort_header($column, $label, $current_column, $current_order, $tab = 'alle', $year = 'alle') {
+    $is_active = ($column === $current_column);
+    $next_order = ($is_active && $current_order === 'asc') ? 'desc' : 'asc';
+    $url = 'index.php?tab=' . urlencode($tab) . '&jaar=' . urlencode((string)$year)
+         . '&sort=' . urlencode($column) . '&order=' . $next_order;
+
+    if ($is_active) {
+        $aria_sort = ($current_order === 'asc') ? 'ascending' : 'descending';
+        $indicator = ($current_order === 'asc') ? '↑' : '↓';
+        $hint = ($current_order === 'asc') ? 'oplopend' : 'aflopend';
+        $title = "Gesorteerd op $label ($hint) - klik om de volgorde om te draaien";
+    } else {
+        $aria_sort = 'none';
+        $indicator = '↕';
+        $title = "Sorteer op $label";
     }
-    return '';
+
+    printf(
+        '<th class="sortable-header%s" aria-sort="%s" scope="col">' .
+        '<a href="%s" title="%s">%s<span class="sort-indicator" aria-hidden="true">%s</span></a></th>',
+        $is_active ? ' active-sort' : '',
+        $aria_sort,
+        htmlspecialchars($url),
+        htmlspecialchars($title),
+        htmlspecialchars($label),
+        $indicator
+    );
 }
 $page_title = 'Boekhouding Applicatie';
 $page_subtitle = 'Overzicht van alle financiële transacties';
 $page_css = <<<CSS
+/* De kop is een echte link; de <th> zelf krijgt geen padding meer
+   zodat het klikvlak de hele cel beslaat. */
 .sortable-header {
-    cursor: pointer;
-    user-select: none;
-    position: relative;
-    padding-right: 20px !important;
+    padding: 0 !important;
 }
 
-.sortable-header:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+.sortable-header a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    padding: 0.6rem 0.45rem;
+    color: inherit;
+    text-decoration: none;
+    user-select: none;
+    transition: background-color 0.15s ease;
+}
+
+.sortable-header a:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.sortable-header a:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: -2px;
+    box-shadow: none;
 }
 
 .sort-indicator {
-    position: absolute;
-    right: 5px;
     font-weight: bold;
-}
-
-.sortable-header .sort-indicator {
-    opacity: 1;
-}
-
-.sortable-header:not(.active-sort) .sort-indicator {
-    opacity: 0.3;
+    opacity: 0.35;
 }
 
 .active-sort {
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.active-sort .sort-indicator {
+    opacity: 1;
 }
 
 .table-info {
@@ -165,11 +248,70 @@ $page_css = <<<CSS
     border-radius: var(--border-radius);
     margin-bottom: 1rem;
     font-size: 0.9rem;
-    color: var(--gray-dark);
+    color: var(--text-secondary);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
 }
 
 .table-info strong {
-    color: var(--primary-color);
+    color: var(--secondary-color);
+}
+
+.section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.section-head .section-title {
+    margin-bottom: 0;
+    border-bottom: none;
+    flex: 1;
+}
+
+.period-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.period-picker label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.period-picker select {
+    width: auto;
+    min-width: 8rem;
+}
+
+/* BTW-regel onder het bedrag: houdt de kolom smal maar toont
+   de informatie waar een boekhouder als eerste naar kijkt. */
+.amount-vat {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+}
+
+.table-total td {
+    background-color: var(--gray-light);
+    font-weight: 700;
+    border-top: 2px solid var(--border-color);
+    border-bottom: none;
+}
+
+.receipt-missing {
+    color: var(--warning-color);
 }
 
 .username {
@@ -188,8 +330,23 @@ CSS;
 include 'php/page_header.php';
 ?>
     <main class="main-content">
-        <h2 class="section-title">Transactie Overzicht</h2>
-        
+        <div class="section-head">
+            <h2 class="section-title">Transactie Overzicht</h2>
+            <?php if (!empty($available_years)): ?>
+            <div class="period-picker">
+                <label for="yearSelect"><i class="fas fa-calendar" aria-hidden="true"></i> Boekjaar</label>
+                <select id="yearSelect" class="form-control form-control-sm" onchange="switchYear(this.value)">
+                    <?php foreach ($available_years as $y): ?>
+                    <option value="<?php echo $y; ?>" <?php echo ((string)$year === (string)$y) ? 'selected' : ''; ?>>
+                        <?php echo $y; ?>
+                    </option>
+                    <?php endforeach; ?>
+                    <option value="alle" <?php echo ($year === 'alle') ? 'selected' : ''; ?>>Alle jaren</option>
+                </select>
+            </div>
+            <?php endif; ?>
+        </div>
+
         <!-- Tab Navigation -->
         <div class="tab-navigation">
             <button class="tab-button <?php echo $tab === 'alle' ? 'active' : ''; ?>"
@@ -219,7 +376,7 @@ include 'php/page_header.php';
                     'date' => 'Datum',
                     'invoice_number' => 'Factuurnummer',
                     'description' => 'Omschrijving',
-                    'amount' => 'Bedrag',
+                    'amount' => 'Bedrag incl. BTW',
                     'type' => 'Type',
                     'category' => 'Categorie'
                 ];
@@ -228,74 +385,73 @@ include 'php/page_header.php';
                 }
                 echo $column_names[$sort_column] . ' ' . ($sort_order == 'asc' ? '(oplopend)' : '(aflopend)');
             ?>
-            <span style="margin-left: 1rem;">
+            <span>
                 <a href="index.php" class="btn btn-secondary btn-sm">Standaard sortering</a>
             </span>
         </div>
         
         <div class="card-grid">
             <div class="card">
-                <h3 class="card-title">Totaal Inkomsten</h3>
-                <div class="positive amount">€<?php echo number_format($totalInkomsten, 2); ?></div>
+                <h3 class="card-title"><i class="fas fa-arrow-trend-up" style="color: var(--success-color); margin-right: 0.5rem;"></i>Omzet</h3>
+                <div class="positive amount"><?php echo format_euro($nettoInkomsten); ?></div>
+                <div class="card-sub">
+                    excl. BTW &middot; incl. BTW <?php echo format_euro($brutoInkomsten); ?>
+                </div>
             </div>
-            
+
             <div class="card">
-                <h3 class="card-title">Totaal Uitgaven</h3>
-                <div class="negative amount">€<?php echo number_format($totalUitgaven, 2); ?></div>
+                <h3 class="card-title"><i class="fas fa-arrow-trend-down" style="color: var(--danger-color); margin-right: 0.5rem;"></i>Kosten</h3>
+                <div class="negative amount"><?php echo format_euro($nettoUitgaven); ?></div>
+                <div class="card-sub">
+                    excl. BTW &middot; incl. BTW <?php echo format_euro($brutoUitgaven); ?>
+                </div>
             </div>
-            
+
             <div class="card">
-                <h3 class="card-title">Balans</h3>
-                <div class="amount <?php echo $balans >= 0 ? 'positive' : 'negative'; ?>">
-                    €<?php echo number_format($balans, 2); ?>
+                <h3 class="card-title"><i class="fas fa-scale-balanced" style="color: var(--secondary-color); margin-right: 0.5rem;"></i>Resultaat<?php echo ($year !== 'alle') ? ' ' . htmlspecialchars((string)$year) : ''; ?></h3>
+                <div class="amount <?php echo $resultaat >= 0 ? 'positive' : 'negative'; ?>">
+                    <?php echo format_euro($resultaat); ?>
+                </div>
+                <div class="card-sub">
+                    BTW-saldo <strong><?php echo format_euro(abs($btwSaldo)); ?></strong>
+                    <?php echo $btwSaldo >= 0 ? 'af te dragen' : 'terug te vorderen'; ?>
                 </div>
             </div>
         </div>
 
-        <div class="table-container">
-            <table class="data-table">
+        <?php if ($zonderBon > 0): ?>
+        <div class="alert alert-warning">
+            <i class="fas fa-receipt" aria-hidden="true"></i>
+            <strong><?php echo $zonderBon; ?></strong>
+            <?php echo $zonderBon === 1 ? 'uitgave heeft' : 'uitgaven hebben'; ?> geen bonnetje.
+            Zonder bewijsstuk is de BTW niet aftrekbaar bij een controle.
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($transactions)): ?>
+        <div class="table-toolbar">
+            <div class="table-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="transactionSearch" placeholder="Zoek op omschrijving, factuurnummer, relatie of categorie&hellip;" autocomplete="off">
+            </div>
+            <span class="table-search-count" id="transactionSearchCount"></span>
+        </div>
+        <?php endif; ?>
+
+        <div class="table-container table-container--bleed">
+            <table class="data-table data-table--stacked data-table--dense" id="transactionTable">
                 <thead>
                     <tr>
-                        <?php if ($is_admin): ?>
-                        <th class="sortable-header <?php echo $sort_column == 'user' ? 'active-sort' : ''; ?>"
-                            onclick="window.location.href='<?php echo sort_url('user', $sort_column, $sort_order, $tab); ?>'">
-                            Gebruiker
-                            <span class="sort-indicator"><?php echo sort_indicator('user', $sort_column, $sort_order); ?></span>
-                        </th>
-                        <?php endif; ?>
-                        <th class="sortable-header <?php echo $sort_column == 'date' ? 'active-sort' : ''; ?>"
-                            onclick="window.location.href='<?php echo sort_url('date', $sort_column, $sort_order, $tab); ?>'">
-                            Datum
-                            <span class="sort-indicator"><?php echo sort_indicator('date', $sort_column, $sort_order); ?></span>
-                        </th>
-                        <th class="sortable-header <?php echo $sort_column == 'invoice_number' ? 'active-sort' : ''; ?>"
-                            onclick="window.location.href='<?php echo sort_url('invoice_number', $sort_column, $sort_order, $tab); ?>'">
-                            Factuurnr.
-                            <span class="sort-indicator"><?php echo sort_indicator('invoice_number', $sort_column, $sort_order); ?></span>
-                        </th>
-                        <th>Relatie</th>
-                        <th class="sortable-header <?php echo $sort_column == 'description' ? 'active-sort' : ''; ?>"
-                            onclick="window.location.href='<?php echo sort_url('description', $sort_column, $sort_order, $tab); ?>'">
-                            Omschrijving
-                            <span class="sort-indicator"><?php echo sort_indicator('description', $sort_column, $sort_order); ?></span>
-                        </th>
-                        <th class="sortable-header <?php echo $sort_column == 'amount' ? 'active-sort' : ''; ?>"
-                            onclick="window.location.href='<?php echo sort_url('amount', $sort_column, $sort_order, $tab); ?>'">
-                            Bedrag
-                            <span class="sort-indicator"><?php echo sort_indicator('amount', $sort_column, $sort_order); ?></span>
-                        </th>
-                        <th class="sortable-header <?php echo $sort_column == 'type' ? 'active-sort' : ''; ?>"
-                            onclick="window.location.href='<?php echo sort_url('type', $sort_column, $sort_order, $tab); ?>'">
-                            Type
-                            <span class="sort-indicator"><?php echo sort_indicator('type', $sort_column, $sort_order); ?></span>
-                        </th>
-                        <th class="sortable-header <?php echo $sort_column == 'category' ? 'active-sort' : ''; ?>"
-                            onclick="window.location.href='<?php echo sort_url('category', $sort_column, $sort_order, $tab); ?>'">
-                            Categorie
-                            <span class="sort-indicator"><?php echo sort_indicator('category', $sort_column, $sort_order); ?></span>
-                        </th>
-                        <th>Bon</th>
-                        <th>Acties</th>
+                        <?php if ($is_admin) sort_header('user', 'Gebruiker', $sort_column, $sort_order, $tab, $year); ?>
+                        <?php sort_header('date', 'Datum', $sort_column, $sort_order, $tab, $year); ?>
+                        <?php sort_header('invoice_number', 'Factuurnr.', $sort_column, $sort_order, $tab, $year); ?>
+                        <th scope="col">Relatie</th>
+                        <?php sort_header('description', 'Omschrijving', $sort_column, $sort_order, $tab, $year); ?>
+                        <?php sort_header('amount', 'Bedrag incl.', $sort_column, $sort_order, $tab, $year); ?>
+                        <?php sort_header('type', 'Type', $sort_column, $sort_order, $tab, $year); ?>
+                        <?php sort_header('category', 'Categorie', $sort_column, $sort_order, $tab, $year); ?>
+                        <th scope="col">Bon</th>
+                        <th scope="col">Acties</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -311,7 +467,7 @@ include 'php/page_header.php';
                     <?php foreach ($transactions as $t): ?>
                     <tr>
                         <?php if ($is_admin): ?>
-                        <td>
+                        <td data-label="Gebruiker">
                             <?php if (!empty($t['username'])): ?>
                                 <span class="user-badge" title="<?php echo htmlspecialchars($t['user_full_name'] ?? $t['username']); ?>">
                                     <?php echo htmlspecialchars($t['username']); ?>
@@ -321,8 +477,8 @@ include 'php/page_header.php';
                             <?php endif; ?>
                         </td>
                         <?php endif; ?>
-                        <td><?php echo date('d-m-Y', strtotime($t['date'])); ?></td>
-                        <td>
+                        <td data-label="Datum"><?php echo date('d-m-Y', strtotime($t['date'])); ?></td>
+                        <td data-label="Factuurnr.">
                             <?php if (!empty($t['invoice_number'])): ?>
                             <span class="invoice-number" title="Factuurnummer: <?php echo htmlspecialchars($t['invoice_number']); ?>">
                                 <?php echo htmlspecialchars($t['invoice_number']); ?>
@@ -331,7 +487,7 @@ include 'php/page_header.php';
                             <span class="neutral" style="font-style: italic; color: var(--text-secondary);">-</span>
                             <?php endif; ?>
                         </td>
-                        <td>
+                        <td data-label="Relatie">
                             <?php if (!empty($t['relation_name'])): ?>
                             <a href="php/relations.php?id=<?php echo $t['relation_id']; ?>"
                                title="<?php echo htmlspecialchars($t['relation_code']); ?> - Klik voor details"
@@ -345,8 +501,8 @@ include 'php/page_header.php';
                             </span>
                             <?php endif; ?>
                         </td>
-                        <td><?php echo htmlspecialchars($t['description']); ?></td>
-                        <td class="<?php
+                        <td data-label="Omschrijving"><?php echo htmlspecialchars($t['description']); ?></td>
+                        <td data-label="Bedrag" class="<?php
                             // Determine styling based on amount and type
                             if ($t['type'] == 'inkomst') {
                                 echo $t['amount'] >= 0 ? 'positive' : 'negative';
@@ -354,9 +510,20 @@ include 'php/page_header.php';
                                 echo $t['amount'] >= 0 ? 'negative' : 'positive';
                             }
                         ?>">
-                            €<?php echo number_format($t['amount'], 2); ?>
+                            <?php echo format_euro($t['amount_incl']); ?>
+                            <?php $rowVat = (float)$t['vat_amount']; if ($rowVat != 0): ?>
+                            <span class="amount-vat" title="BTW <?php echo format_percentage($t['vat_percentage']); ?><?php
+                                echo empty($t['vat_deductible']) && $t['type'] === 'uitgave' ? ' (niet aftrekbaar)' : ''; ?>">
+                                <?php echo format_percentage($t['vat_percentage']); ?> &middot; <?php echo format_euro($rowVat); ?>
+                                <?php if (empty($t['vat_deductible']) && $t['type'] === 'uitgave'): ?>
+                                <i class="fas fa-ban" aria-hidden="true" title="Niet aftrekbaar"></i>
+                                <?php endif; ?>
+                            </span>
+                            <?php else: ?>
+                            <span class="amount-vat">geen BTW</span>
+                            <?php endif; ?>
                         </td>
-                        <td>
+                        <td data-label="Type">
                             <span class="<?php
                                 if ($t['type'] == 'inkomst') {
                                     echo $t['amount'] >= 0 ? 'positive' : 'negative';
@@ -376,8 +543,8 @@ include 'php/page_header.php';
                                 ?>
                             </span>
                         </td>
-                        <td><?php echo htmlspecialchars($t['category'] ?: 'Geen categorie'); ?></td>
-                        <td>
+                        <td data-label="Categorie"><?php echo htmlspecialchars($t['category'] ?: 'Geen categorie'); ?></td>
+                        <td data-label="Bon">
                             <?php if (!empty($t['receipt_path'])): ?>
                             <a href="php/view_receipt.php?id=<?php echo $t['id']; ?>"
                                target="_blank"
@@ -391,29 +558,38 @@ include 'php/page_header.php';
                             </span>
                             <?php endif; ?>
                         </td>
-                        <td>
-                            <div class="btn-group">
+                        <td data-label="Acties">
+                            <div class="btn-group btn-group--actions">
                                 <?php if (can_access_transaction($t['id'])): ?>
-                                    <a href="php/edit.php?id=<?php echo $t['id']; ?>" class="btn btn-secondary btn-sm">Bewerken</a>
+                                    <a href="php/edit.php?id=<?php echo $t['id']; ?>"
+                                       class="btn-icon" title="Bewerken" aria-label="Transactie bewerken">
+                                        <i class="fas fa-pen" aria-hidden="true"></i>
+                                    </a>
                                     <?php if ($t['type'] == 'inkomst'): ?>
                                     <a href="pdf/invoice_pdf.php?id=<?php echo $t['id']; ?>"
-                                       class="btn btn-primary btn-sm"
-                                       target="_blank"
-                                       title="Factuur als PDF printen">
-                                        <i class="fas fa-file-pdf"></i> Factuur
+                                       class="btn-icon" target="_blank"
+                                       title="Factuur als PDF" aria-label="Factuur als PDF openen">
+                                        <i class="fas fa-file-pdf" aria-hidden="true"></i>
                                     </a>
                                     <?php endif; ?>
                                     <a href="php/delete.php?id=<?php echo $t['id']; ?>"
-                                       class="btn btn-danger btn-sm"
+                                       class="btn-icon btn-icon--danger"
+                                       title="Verwijderen" aria-label="Transactie verwijderen"
                                        onclick="return confirm('Weet je zeker dat je deze transactie wilt verwijderen?')">
-                                        Verwijderen
+                                        <i class="fas fa-trash" aria-hidden="true"></i>
                                     </a>
                                 <?php else: ?>
-                                    <span class="btn btn-secondary btn-sm disabled" title="Geen toegang">Bewerken</span>
+                                    <span class="btn-icon disabled" title="Geen toegang" aria-label="Bewerken niet toegestaan">
+                                        <i class="fas fa-pen" aria-hidden="true"></i>
+                                    </span>
                                     <?php if ($t['type'] == 'inkomst'): ?>
-                                    <span class="btn btn-primary btn-sm disabled" title="Geen toegang"><i class="fas fa-file-pdf"></i> Factuur</span>
+                                    <span class="btn-icon disabled" title="Geen toegang" aria-label="Factuur niet toegestaan">
+                                        <i class="fas fa-file-pdf" aria-hidden="true"></i>
+                                    </span>
                                     <?php endif; ?>
-                                    <span class="btn btn-danger btn-sm disabled" title="Geen toegang">Verwijderen</span>
+                                    <span class="btn-icon disabled" title="Geen toegang" aria-label="Verwijderen niet toegestaan">
+                                        <i class="fas fa-trash" aria-hidden="true"></i>
+                                    </span>
                                 <?php endif; ?>
                             </div>
                         </td>
@@ -421,6 +597,22 @@ include 'php/page_header.php';
                     <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>
+                <?php if (!empty($transactions)): ?>
+                <tfoot>
+                    <tr class="table-total">
+                        <td colspan="<?php echo $is_admin ? 5 : 4; ?>">
+                            Totaal <?php echo count($transactions); ?>
+                            <?php echo count($transactions) === 1 ? 'boeking' : 'boekingen'; ?>
+                            <?php echo ($year === 'alle') ? '(alle jaren)' : '(boekjaar ' . htmlspecialchars((string)$year) . ')'; ?>
+                        </td>
+                        <td class="<?php echo $resultaat >= 0 ? 'positive' : 'negative'; ?>">
+                            <?php echo format_euro($resultaat); ?>
+                            <span class="amount-vat">excl. BTW</span>
+                        </td>
+                        <td colspan="4"></td>
+                    </tr>
+                </tfoot>
+                <?php endif; ?>
             </table>
         </div>
 
@@ -432,27 +624,23 @@ include 'php/page_header.php';
             <a href="php/balans.php" class="btn btn-secondary">Balans</a>
         </div>
         
-        <div class="card" style="margin-top: 2rem;">
-            <h3 class="card-title">Sortering instructies</h3>
-            <p><strong>Klik op een kolomkop</strong> om te sorteren op die kolom:</p>
-            <ul>
-                <li><strong>Eerste klik:</strong> Sorteer oplopend (A-Z, 0-9, oud-nieuw)</li>
-                <li><strong>Tweede klik:</strong> Sorteer aflopend (Z-A, 9-0, nieuw-oud)</li>
-            </ul>
-            <p>Gebruik de knop "Standaard sortering" om terug te keren naar de standaardweergave. De huidige sortering wordt weergegeven met een pijl (↑ oplopend, ↓ aflopend).</p>
-        </div>
     </main>
 
     <script>
-        // Tab switching function
+        // Wissel van tab of boekjaar met behoud van de overige keuzes
+        function navigateWith(changes) {
+            const p = new URLSearchParams(window.location.search);
+            Object.entries(changes).forEach(([k, v]) => p.set(k, v));
+            if (!p.has('tab')) p.set('tab', 'alle');
+            window.location.href = 'index.php?' + p.toString();
+        }
+
         function switchTab(tab) {
-            // Preserve current sorting parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const sort = urlParams.get('sort') || 'date';
-            const order = urlParams.get('order') || 'asc';
-            
-            // Navigate to new tab with preserved sorting
-            window.location.href = `index.php?tab=${tab}&sort=${sort}&order=${order}`;
+            navigateWith({tab: tab});
+        }
+
+        function switchYear(jaar) {
+            navigateWith({jaar: jaar});
         }
         
         // Simple confirmation for delete actions
@@ -466,18 +654,24 @@ include 'php/page_header.php';
                 });
             });
             
-            // Add hover effects to sortable headers
-            const sortableHeaders = document.querySelectorAll('.sortable-header');
-            sortableHeaders.forEach(header => {
-                header.addEventListener('mouseenter', function() {
-                    this.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            // Live client-side search across the visible transaction table
+            const searchInput = document.getElementById('transactionSearch');
+            const searchCount = document.getElementById('transactionSearchCount');
+            const table = document.getElementById('transactionTable');
+            if (searchInput && table) {
+                const rows = Array.from(table.querySelectorAll('tbody tr')).filter(row => !row.querySelector('td[colspan]'));
+                const totalCount = rows.length;
+                searchInput.addEventListener('input', function() {
+                    const query = this.value.trim().toLowerCase();
+                    let visible = 0;
+                    rows.forEach(row => {
+                        const matches = !query || row.textContent.toLowerCase().includes(query);
+                        row.classList.toggle('js-no-match', !matches);
+                        if (matches) visible++;
+                    });
+                    searchCount.textContent = query ? `${visible} van ${totalCount} transacties` : '';
                 });
-                header.addEventListener('mouseleave', function() {
-                    if (!this.classList.contains('active-sort')) {
-                        this.style.backgroundColor = '';
-                    }
-                });
-            });
+            }
         });
     </script>
     

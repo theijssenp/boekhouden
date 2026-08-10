@@ -5,6 +5,10 @@
  * @author P. Theijssen
  */
 
+// Gedeelde opmaak-/BTW-functies. Staat hier omdat auth_functions.php de
+// enige include is die elke pagina hoe dan ook binnenhaalt.
+require_once __DIR__ . '/format_functions.php';
+
 // Start session if not already started with secure cookie parameters
 if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params([

@@ -54,3 +54,6 @@ php/backup_database.php
 php/backup_interface.php
 php/delete_backup.php
 php/sample_data_interface.php
+
+# Databasedumps (bijv. gemaakt voor een migratie) horen niet in git
+backup_*.sql

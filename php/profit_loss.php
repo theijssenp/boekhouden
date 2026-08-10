@@ -36,13 +36,7 @@ if ($is_admin) {
         $stmt = $pdo->prepare("
             SELECT
                 type,
-                SUM(
-                    CASE
-                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                            amount / (1 + (vat_percentage / 100))
-                        ELSE amount
-                    END
-                ) as total,
+                SUM(amount_excl) as total,
                 COUNT(*) as count
             FROM transactions
             WHERE YEAR(date) = ?
@@ -67,13 +61,7 @@ if ($is_admin) {
         $stmt = $pdo->prepare("
             SELECT
                 type,
-                SUM(
-                    CASE
-                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                            amount / (1 + (vat_percentage / 100))
-                        ELSE amount
-                    END
-                ) as total,
+                SUM(amount_excl) as total,
                 COUNT(*) as count
             FROM transactions
             WHERE YEAR(date) = ? AND user_id = ?
@@ -115,13 +103,7 @@ foreach ($quarters as $q => $quarter) {
             $stmt = $pdo->prepare("
                 SELECT
                     type,
-                    SUM(
-                        CASE
-                            WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                                amount / (1 + (vat_percentage / 100))
-                            ELSE amount
-                        END
-                    ) as total
+                    SUM(amount_excl) as total
                 FROM transactions
                 WHERE date BETWEEN ? AND ?
                 GROUP BY type
@@ -144,13 +126,7 @@ foreach ($quarters as $q => $quarter) {
             $stmt = $pdo->prepare("
                 SELECT
                     type,
-                    SUM(
-                        CASE
-                            WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                                amount / (1 + (vat_percentage / 100))
-                            ELSE amount
-                        END
-                    ) as total
+                    SUM(amount_excl) as total
                 FROM transactions
                 WHERE date BETWEEN ? AND ? AND user_id = ?
                 GROUP BY type
@@ -195,13 +171,7 @@ if ($is_admin) {
             SELECT
                 c.name as category,
                 t.type,
-                SUM(
-                    CASE
-                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                            t.amount / (1 + (t.vat_percentage / 100))
-                        ELSE t.amount
-                    END
-                ) as total
+                SUM(t.amount_excl) as total
             FROM transactions t
             LEFT JOIN categories c ON t.category_id = c.id
             WHERE YEAR(t.date) = ?
@@ -230,13 +200,7 @@ if ($is_admin) {
             SELECT
                 c.name as category,
                 t.type,
-                SUM(
-                    CASE
-                        WHEN t.vat_included = TRUE AND t.vat_percentage > 0 THEN
-                            t.amount / (1 + (t.vat_percentage / 100))
-                        ELSE t.amount
-                    END
-                ) as total
+                SUM(t.amount_excl) as total
             FROM transactions t
             LEFT JOIN categories c ON t.category_id = c.id
             WHERE YEAR(t.date) = ? AND t.user_id = ?
@@ -287,20 +251,20 @@ include 'page_header.php';
         <div class="card-grid">
             <div class="card">
                 <h3 class="card-title">Totale Inkomsten</h3>
-                <div class="positive amount">€<?php echo number_format($totalIncome, 2); ?></div>
+                <div class="positive amount"><?php echo format_euro($totalIncome); ?></div>
                 <p class="neutral">Alle inkomsten in <?php echo $year; ?></p>
             </div>
             
             <div class="card">
                 <h3 class="card-title">Totale Uitgaven</h3>
-                <div class="negative amount">€<?php echo number_format($totalExpenses, 2); ?></div>
+                <div class="negative amount"><?php echo format_euro($totalExpenses); ?></div>
                 <p class="neutral">Alle uitgaven in <?php echo $year; ?></p>
             </div>
             
             <div class="card" style="grid-column: span 2; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: var(--text-inverse);">
                 <h3 class="card-title" style="color: var(--text-inverse);">Jaarresultaat</h3>
                 <div class="amount" style="font-size: 2.5rem; color: var(--text-inverse);">
-                    €<?php echo number_format($profit, 2); ?>
+                    <?php echo format_euro($profit); ?>
                 </div>
                 <p style="font-size: 1.2rem; margin-top: 10px;">
                     <?php if ($profit > 0): ?>
@@ -334,25 +298,25 @@ include 'page_header.php';
                         ?>
                         <tr>
                             <td><strong><?php echo $qData['name']; ?></strong></td>
-                            <td class="positive">€<?php echo number_format($qData['income'], 2); ?></td>
-                            <td class="negative">€<?php echo number_format($qData['expenses'], 2); ?></td>
+                            <td class="positive"><?php echo format_euro($qData['income']); ?></td>
+                            <td class="negative"><?php echo format_euro($qData['expenses']); ?></td>
                             <td class="<?php echo $qData['profit'] >= 0 ? 'positive' : 'negative'; ?>">
-                                <strong>€<?php echo number_format($qData['profit'], 2); ?></strong>
+                                <strong><?php echo format_euro($qData['profit']); ?></strong>
                             </td>
                             <td class="<?php echo $margin >= 0 ? 'positive' : 'negative'; ?>">
-                                <?php echo number_format($margin, 1); ?>%
+                                <?php echo format_amount($margin, 1); ?>%
                             </td>
                         </tr>
                         <?php endforeach; ?>
                         <tr style="background-color: var(--bg-table-stripe); font-weight: bold;">
                             <td><strong>Totaal <?php echo $year; ?></strong></td>
-                            <td class="positive">€<?php echo number_format($totalIncome, 2); ?></td>
-                            <td class="negative">€<?php echo number_format($totalExpenses, 2); ?></td>
+                            <td class="positive"><?php echo format_euro($totalIncome); ?></td>
+                            <td class="negative"><?php echo format_euro($totalExpenses); ?></td>
                             <td class="<?php echo $profit >= 0 ? 'positive' : 'negative'; ?>">
-                                €<?php echo number_format($profit, 2); ?>
+                                <?php echo format_euro($profit); ?>
                             </td>
                             <td class="<?php echo ($totalIncome > 0 ? ($profit / $totalIncome) * 100 : 0) >= 0 ? 'positive' : 'negative'; ?>">
-                                <?php echo $totalIncome > 0 ? number_format(($profit / $totalIncome) * 100, 1) : '0.0'; ?>%
+                                <?php echo $totalIncome > 0 ? format_amount(($profit / $totalIncome) * 100, 1) : '0.0'; ?>%
                             </td>
                         </tr>
                     </tbody>
@@ -411,10 +375,10 @@ include 'page_header.php';
                                     echo $row['total'] >= 0 ? 'negative' : 'positive';
                                 }
                             ?>">
-                                €<?php echo number_format($row['total'], 2); ?>
+                                <?php echo format_euro($row['total']); ?>
                             </td>
                             <td class="neutral">
-                                <?php echo number_format($percentage, 1); ?>%
+                                <?php echo format_amount($percentage, 1); ?>%
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -441,9 +405,9 @@ include 'page_header.php';
                     $winstmarge = $totalIncome > 0 ? ($profit / $totalIncome) * 100 : 0;
                     $kostenratio = $totalIncome > 0 ? ($totalExpenses / $totalIncome) * 100 : 0;
                     ?>
-                    <li><strong>Winstmarge:</strong> <?php echo number_format($winstmarge, 1); ?>%
+                    <li><strong>Winstmarge:</strong> <?php echo format_amount($winstmarge, 1); ?>%
                         (<?php echo $winstmarge >= 10 ? 'Goed' : ($winstmarge >= 5 ? 'Redelijk' : 'Laag'); ?>)</li>
-                    <li><strong>Kostenratio:</strong> <?php echo number_format($kostenratio, 1); ?>%
+                    <li><strong>Kostenratio:</strong> <?php echo format_amount($kostenratio, 1); ?>%
                         (<?php echo $kostenratio <= 80 ? 'Goed' : ($kostenratio <= 90 ? 'Redelijk' : 'Hoog'); ?>)</li>
                     <li><strong>Groei potentieel:</strong> 
                         <?php 

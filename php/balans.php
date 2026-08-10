@@ -27,13 +27,7 @@ if ($is_admin) {
         $stmt = $pdo->prepare("
             SELECT
                 type,
-                SUM(
-                    CASE
-                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                            amount / (1 + (vat_percentage / 100))
-                        ELSE amount
-                    END
-                ) as total
+                SUM(amount_excl) as total
             FROM transactions
             WHERE date <= ?
             GROUP BY type
@@ -55,13 +49,7 @@ if ($is_admin) {
         $stmt = $pdo->prepare("
             SELECT
                 type,
-                SUM(
-                    CASE
-                        WHEN vat_included = TRUE AND vat_percentage > 0 THEN
-                            amount / (1 + (vat_percentage / 100))
-                        ELSE amount
-                    END
-                ) as total
+                SUM(amount_excl) as total
             FROM transactions
             WHERE date <= ? AND user_id = ?
             GROUP BY type
@@ -185,20 +173,20 @@ include 'page_header.php';
         <div class="card-grid">
             <div class="card">
                 <h3 class="card-title">Totaal Activa</h3>
-                <div class="positive amount">€<?php echo number_format($totalAssets, 2); ?></div>
+                <div class="positive amount"><?php echo format_euro($totalAssets); ?></div>
                 <p class="neutral">Totale bezittingen</p>
             </div>
             
             <div class="card">
                 <h3 class="card-title">Totaal Passiva</h3>
-                <div class="negative amount">€<?php echo number_format($totalLiabilities, 2); ?></div>
+                <div class="negative amount"><?php echo format_euro($totalLiabilities); ?></div>
                 <p class="neutral">Totale schulden</p>
             </div>
             
             <div class="card" style="grid-column: span 2; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: var(--text-inverse);">
                 <h3 class="card-title" style="color: var(--text-inverse);">Eigen Vermogen</h3>
                 <div class="amount" style="font-size: 2.5rem; color: var(--text-inverse);">
-                    €<?php echo number_format($equity, 2); ?>
+                    <?php echo format_euro($equity); ?>
                 </div>
                 <p style="font-size: 1.2rem; margin-top: 10px;">
                     <?php if ($equity > 0): ?>
@@ -215,14 +203,14 @@ include 'page_header.php';
         <div class="balance-check">
             <h3>Balans Controle</h3>
             <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">
-                Activa (€<?php echo number_format($totalAssets, 2); ?>) = Passiva (€<?php echo number_format($totalLiabilities, 2); ?>) + Eigen Vermogen (€<?php echo number_format($equity, 2); ?>)
+                Activa (<?php echo format_euro($totalAssets); ?>) = Passiva (<?php echo format_euro($totalLiabilities); ?>) + Eigen Vermogen (<?php echo format_euro($equity); ?>)
             </p>
             <p style="font-size: 1.5rem; font-weight: bold;">
                 <?php echo $totalAssets == ($totalLiabilities + $equity) ? '✓ BALANS KLOPT' : '✗ BALANS KLOPT NIET'; ?>
             </p>
             <?php if ($totalAssets != ($totalLiabilities + $equity)): ?>
             <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.9;">
-                Verschil: €<?php echo number_format(abs($totalAssets - ($totalLiabilities + $equity)), 2); ?>
+                Verschil: <?php echo format_euro(abs($totalAssets - ($totalLiabilities + $equity))); ?>
             </p>
             <?php endif; ?>
         </div>
@@ -234,7 +222,7 @@ include 'page_header.php';
                     
                     <div class="balance-item">
                         <span>Liquide middelen</span>
-                        <span class="positive">€<?php echo number_format($cashBalance, 2); ?></span>
+                        <span class="positive"><?php echo format_euro($cashBalance); ?></span>
                     </div>
                     
                     <div class="balance-item">
@@ -259,7 +247,7 @@ include 'page_header.php';
                     
                     <div class="balance-item total">
                         <span>Totaal Activa</span>
-                        <span class="positive">€<?php echo number_format($totalAssets, 2); ?></span>
+                        <span class="positive"><?php echo format_euro($totalAssets); ?></span>
                     </div>
                 </div>
                 
@@ -296,12 +284,12 @@ include 'page_header.php';
                     
                     <div class="balance-item">
                         <span>Overige schulden</span>
-                        <span class="negative">€<?php echo number_format($totalLiabilities, 2); ?></span>
+                        <span class="negative"><?php echo format_euro($totalLiabilities); ?></span>
                     </div>
                     
                     <div class="balance-item subtotal">
                         <span>Totaal Schulden</span>
-                        <span class="negative">€<?php echo number_format($totalLiabilities, 2); ?></span>
+                        <span class="negative"><?php echo format_euro($totalLiabilities); ?></span>
                     </div>
                     
                     <h4 style="color: var(--success-color); margin-top: 1.5rem;">Eigen Vermogen</h4>
@@ -318,14 +306,14 @@ include 'page_header.php';
                     <div class="balance-item">
                         <span>Winst/Verlies <?php echo date('Y', strtotime($date)); ?></span>
                         <span class="<?php echo $equity >= 0 ? 'positive' : 'negative'; ?>">
-                            €<?php echo number_format($equity, 2); ?>
+                            <?php echo format_euro($equity); ?>
                         </span>
                     </div>
                     
                     <div class="balance-item total">
                         <span>Totaal Passiva & Eigen Vermogen</span>
                         <span class="<?php echo ($totalLiabilities + $equity) >= 0 ? 'positive' : 'negative'; ?>">
-                            €<?php echo number_format($totalLiabilities + $equity, 2); ?>
+                            <?php echo format_euro($totalLiabilities + $equity); ?>
                         </span>
                     </div>
                 </div>
@@ -350,7 +338,7 @@ include 'page_header.php';
                     <div class="amount" style="font-size: 1.8rem;">
                         <?php 
                         $solvability = $totalAssets > 0 ? ($equity / $totalAssets) * 100 : 0;
-                        echo number_format($solvability, 1) . '%';
+                        echo format_amount($solvability, 1) . '%';
                         ?>
                     </div>
                     <p class="neutral">
@@ -373,7 +361,7 @@ include 'page_header.php';
                         $currentAssets = $cashBalance; // Simplified
                         $currentLiabilities = $totalLiabilities; // Simplified
                         $currentRatio = $currentLiabilities > 0 ? $currentAssets / $currentLiabilities : 99;
-                        echo number_format($currentRatio, 2);
+                        echo format_amount($currentRatio);
                         ?>
                     </div>
                     <p class="neutral">
@@ -394,7 +382,7 @@ include 'page_header.php';
                     <div class="amount" style="font-size: 1.8rem;">
                         <?php 
                         $profitability = $totalAssets > 0 ? ($equity / $totalAssets) * 100 : 0;
-                        echo number_format($profitability, 1) . '%';
+                        echo format_amount($profitability, 1) . '%';
                         ?>
                     </div>
                     <p class="neutral">
