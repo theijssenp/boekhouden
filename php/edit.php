@@ -190,6 +190,7 @@ include 'page_header.php';
 
         <form method="post" class="transaction-form" enctype="multipart/form-data">
             <?php echo csrf_field(); ?>
+            <div class="card">
                 <h3 class="card-title">Basisgegevens</h3>
 
                 <div class="form-group">

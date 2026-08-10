@@ -19,7 +19,8 @@ $error = '';
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf_token();
-    
+    $post_action = $_POST['action'] ?? '';
+
     if ($post_action === 'create') {
         // Create new user
         $user_data = [
@@ -210,7 +211,8 @@ if ($user_id && ($action === 'edit' || $action === 'view')) {
             
             <form method="POST" class="form-card">
                 <?php echo csrf_field(); ?>
-                
+                <input type="hidden" name="action" value="create">
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="username">Gebruikersnaam *</label>
@@ -275,6 +277,7 @@ if ($user_id && ($action === 'edit' || $action === 'view')) {
             
             <form method="POST" class="form-card">
                 <?php echo csrf_field(); ?>
+                <input type="hidden" name="action" value="update">
                 <input type="hidden" name="user_id" value="<?php echo $edit_user['id']; ?>">
                 
                 <div class="form-row">

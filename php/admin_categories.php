@@ -11,6 +11,7 @@ $messageType = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf_token();
+    if (isset($_POST['action'])) {
         try {
             if ($_POST['action'] === 'add' || $_POST['action'] === 'edit') {
                 $name = trim($_POST['name']);
@@ -331,6 +332,7 @@ $show_nav = true;
             <h2 class="section-title"><?php echo $editCategory ? 'Categorie Bewerken' : 'Nieuwe Categorie'; ?></h2>
             <form method="post">
                 <?php echo csrf_field(); ?>
+                <?php if ($editCategory): ?>
                 <input type="hidden" name="action" value="edit">
                 <input type="hidden" name="id" value="<?php echo $editCategory['id']; ?>">
                 <?php else: ?>
@@ -415,6 +417,7 @@ $show_nav = true;
                                 <?php if (!$category['is_system']): ?>
                                 <form method="post" style="display: inline;" onsubmit="return confirm('Weet u zeker dat u deze categorie wilt verwijderen?');">
                                     <?php echo csrf_field(); ?>
+                                    <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id" value="<?php echo $category['id']; ?>">
                                     <button type="submit" class="btn btn-danger btn-sm">Verwijderen</button>
                                 </form>
