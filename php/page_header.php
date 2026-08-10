@@ -52,7 +52,12 @@ function is_nav_active($match, $_active_nav) {
     <title><?php echo htmlspecialchars($page_title); ?> - Boekhouden</title>
     <link rel="icon" type="image/svg+xml" href="<?php echo $_path_prefix; ?>favicon.svg">
     <link rel="stylesheet" href="<?php echo $_path_prefix; ?>css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <?php // Font Awesome 6.4.0 - lokaal gehost (zie vendor/fontawesome/README.md).
+          // Alleen de 'solid' variant; die is de enige die de app gebruikt. ?>
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+          href="<?php echo $_path_prefix; ?>vendor/fontawesome/webfonts/fa-solid-900.woff2">
+    <link rel="stylesheet" href="<?php echo $_path_prefix; ?>vendor/fontawesome/css/fontawesome.min.css">
+    <link rel="stylesheet" href="<?php echo $_path_prefix; ?>vendor/fontawesome/css/solid.min.css">
     <?php if (!empty($page_css)): ?>
     <style>
         /* Pagina-specifieke CSS injectie.

@@ -58,6 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Inloggen - Boekhouden</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/fontawesome.min.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/solid.min.css">
     <style>
         body {
             display: flex;
