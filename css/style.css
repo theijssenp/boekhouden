@@ -13,25 +13,29 @@
     --gray-medium: #e9ecef;
     --gray-dark: #6c757d;
     --border-radius: 8px;
+    --border-radius-sm: 6px;
+    --border-radius-lg: 14px;
     --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --transition: all 0.3s ease;
+    --transition: all 0.2s ease;
+    --focus-ring: 0 0 0 3px rgba(52, 152, 219, 0.35);
     /* Theme variables */
-    --bg-body: #ecf0f1;
+    --bg-body: #eef1f4;
     --bg-card: #ffffff;
     --bg-input: #ffffff;
     --bg-nav: #ffffff;
     --bg-dropdown: #ffffff;
-    --bg-hover: #f1f1f1;
-    --bg-table-stripe: #f8f9fa;
-    --text-primary: #333333;
-    --text-secondary: #6c757d;
+    --bg-hover: #f1f5f9;
+    --bg-table-stripe: #f8fafc;
+    --text-primary: #26313d;
+    --text-secondary: #64748b;
     --text-inverse: #ffffff;
-    --border-color: #e9ecef;
-    --shadow-card: 0 2px 4px rgba(0,0,0,0.08);
+    --border-color: #e2e8f0;
+    --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
+    --shadow-raised: 0 8px 20px rgba(15, 23, 42, 0.10);
 }
 
 [data-theme="dark"] {
-    --primary-color: #1a252f;
+    --primary-color: #17212e;
     --secondary-color: #5dade2;
     --accent-color: #2471a3;
     --light-color: #1a1a2e;
@@ -39,19 +43,23 @@
     --gray-light: #16213e;
     --gray-medium: #2c3e50;
     --gray-dark: #aab7b8;
-    --bg-body: #0f0f1a;
-    --bg-card: #1a1a2e;
-    --bg-input: #16213e;
-    --bg-nav: #1a1a2e;
-    --bg-dropdown: #16213e;
-    --bg-hover: #2c3e50;
-    --bg-table-stripe: #16213e;
-    --text-primary: #ecf0f1;
-    --text-secondary: #aab7b8;
+    --success-color: #2ecc71;
+    --danger-color: #e74c3c;
+    --bg-body: #0c0f16;
+    --bg-card: #161c27;
+    --bg-input: #131924;
+    --bg-nav: #161c27;
+    --bg-dropdown: #1a2130;
+    --bg-hover: #1f2937;
+    --bg-table-stripe: #131924;
+    --text-primary: #e7ecf3;
+    --text-secondary: #9aa7b8;
     --text-inverse: #ffffff;
-    --border-color: #2c3e50;
-    --shadow-card: 0 2px 4px rgba(0,0,0,0.3);
+    --border-color: #263143;
+    --shadow-card: 0 1px 2px rgba(0,0,0,0.4);
+    --shadow-raised: 0 8px 24px rgba(0,0,0,0.45);
     --box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    --focus-ring: 0 0 0 3px rgba(93, 173, 226, 0.35);
 }
 
 /* Keyframe animaties voor betere UX */
@@ -112,14 +120,36 @@
     box-sizing: border-box;
 }
 
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     color: var(--text-primary);
     background-color: var(--bg-body);
     padding: 20px;
     max-width: 1200px;
     margin: 0 auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Consistent, visible keyboard focus everywhere */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: var(--border-radius-sm);
+}
+
+::selection {
+    background: rgba(52, 152, 219, 0.25);
 }
 
 /* Header and Navigation */
@@ -264,9 +294,7 @@ body {
 .form-control:focus {
     outline: none;
     border-color: var(--secondary-color);
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-    transform: scale(1.01);
-    transition: all 0.3s ease;
+    box-shadow: var(--focus-ring);
 }
 
 .form-control-sm {
@@ -290,22 +318,8 @@ body {
     overflow: hidden;
 }
 
-.btn::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-}
-
-.btn:hover::before {
-    width: 300px;
-    height: 300px;
+.btn:active {
+    transform: translateY(0);
 }
 
 .btn-primary {
@@ -363,10 +377,77 @@ body {
     flex-wrap: wrap;
 }
 
+/* Compacte icoonknop voor actiekolommen in dichte tabellen.
+   Scheelt ~200px breedte t.o.v. tekstknoppen; de toegankelijke naam
+   komt uit aria-label, de tooltip uit title. */
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.btn-icon:hover {
+    background-color: var(--bg-hover);
+    color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-icon--danger:hover {
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+    background-color: rgba(231, 76, 60, 0.08);
+}
+
+.btn-icon.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.btn.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+    filter: grayscale(30%);
+}
+
+.btn.disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
 /* Tables */
 .table-container {
     overflow-x: auto;
     margin: 1.5rem 0;
+}
+
+/* Laat een brede datatabel de padding van de omliggende .main-content
+   opvullen, zodat er geen horizontale schuifbalk nodig is. */
+.table-container--bleed {
+    margin-left: -2rem;
+    margin-right: -2rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+@media (max-width: 768px) {
+    .table-container--bleed {
+        margin-left: -1rem;
+        margin-right: -1rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
 }
 
 .data-table {
@@ -380,28 +461,191 @@ body {
 .data-table th {
     background-color: var(--primary-color);
     color: var(--text-inverse);
-    padding: 1rem;
+    padding: 0.8rem 0.7rem;
     text-align: left;
     font-weight: 600;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 2;
 }
 
 .data-table td {
-    padding: 1rem;
-    border-bottom: 1px solid var(--gray-medium);
+    padding: 0.7rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
 }
 
 .data-table tbody tr {
-    transition: all 0.3s ease;
+    transition: background-color 0.15s ease;
 }
 
 .data-table tr:nth-child(even) {
-    background-color: var(--gray-light);
+    background-color: var(--bg-table-stripe);
 }
 
 .data-table tbody tr:hover {
     background-color: var(--bg-hover);
-    transform: scale(1.01);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.data-table .amount,
+.data-table td.positive,
+.data-table td.negative {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-align: right;
+}
+
+/* Korte, atomaire waarden mogen nooit over meerdere regels breken -
+   een datum of factuurnummer over 3 regels maakt de rij onnodig hoog. */
+.data-table td[data-label="Datum"],
+.data-table td[data-label="Factuurnr."],
+.data-table td[data-label="Bon"],
+.data-table td[data-label="Acties"] {
+    white-space: nowrap;
+}
+
+.data-table .invoice-number {
+    white-space: nowrap;
+}
+
+/* Dichtere variant voor tabellen met veel kolommen (zoals het
+   transactieoverzicht met 10 kolommen voor een beheerder). */
+.data-table--dense th,
+.data-table--dense td {
+    padding: 0.6rem 0.45rem;
+}
+
+/* De bonkolom bevat alleen een icoon */
+.data-table--dense td[data-label="Bon"],
+.data-table--dense th:nth-last-child(2) {
+    text-align: center;
+}
+
+
+.btn-group--actions {
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+}
+
+/* Table toolbar: search box above a data table */
+.table-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.table-search {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+    max-width: 360px;
+}
+
+.table-search i {
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.table-search input {
+    width: 100%;
+    padding: 0.6rem 0.9rem 0.6rem 2.25rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: var(--transition);
+}
+
+.table-search input:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: var(--focus-ring);
+}
+
+.table-search-count {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.data-table tr.js-no-match {
+    display: none;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--text-secondary);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: var(--gray-medium);
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.empty-state p {
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive card-style table for narrow screens.
+   Opt-in: apply to a <table> and add data-label to each <td>. */
+@media (max-width: 760px) {
+    .data-table.data-table--stacked thead {
+        display: none;
+    }
+
+    .data-table.data-table--stacked,
+    .data-table.data-table--stacked tbody,
+    .data-table.data-table--stacked tr,
+    .data-table.data-table--stacked td {
+        display: block;
+        width: 100%;
+    }
+
+    .data-table.data-table--stacked tr {
+        margin-bottom: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--shadow-card);
+    }
+
+    .data-table.data-table--stacked tr:nth-child(even) {
+        background-color: var(--bg-card);
+    }
+
+    .data-table.data-table--stacked td {
+        text-align: right;
+        padding: 0.6rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .data-table.data-table--stacked td:last-child {
+        border-bottom: none;
+    }
+
+    .data-table.data-table--stacked td[data-label]::before {
+        content: attr(data-label);
+        float: left;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-right: 1rem;
+    }
+
+    .data-table.data-table--stacked td .btn-group {
+        justify-content: flex-end;
+    }
 }
 
 /* Cards and Panels */
@@ -416,15 +660,34 @@ body {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+/* Alleen kaarten die echt aanklikbaar zijn "liften" - een statistiekkaart
+   die omhoog komt bij hover suggereert onterecht dat je erop kunt klikken. */
+.card--interactive {
+    cursor: pointer;
+}
+
+.card--interactive:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-raised);
 }
 
 .card-title {
     color: var(--primary-color);
     margin-bottom: 1rem;
     font-size: 1.4rem;
+}
+
+/* Toelichtingsregel onder een bedrag in een statistiekkaart */
+.card-sub {
+    margin-top: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.card .amount {
+    font-size: 1.6rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
 }
 
 .card-grid {
@@ -473,6 +736,129 @@ body {
     color: var(--secondary-color);
 }
 
+/* Alias: sommige pagina's gebruiken alert-error i.p.v. alert-danger */
+.alert-error {
+    background-color: rgba(231, 76, 60, 0.1);
+    border-color: var(--danger-color);
+    color: var(--danger-color);
+}
+
+/* Profielmenu in de navigatiebalk */
+.profile-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.profile-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+    color: var(--text-inverse);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    cursor: pointer;
+    border: 2px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.profile-icon:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.15);
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 50px;
+    background-color: var(--bg-dropdown);
+    min-width: 220px;
+    box-shadow: var(--shadow-raised);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.dropdown-content.show {
+    display: block;
+}
+
+.dropdown-header {
+    padding: 15px;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: var(--text-inverse);
+}
+
+.dropdown-header .user-name {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 3px;
+}
+
+.dropdown-header .user-email {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.dropdown-header .user-role {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    margin-top: 5px;
+}
+
+.dropdown-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.dropdown-menu li {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dropdown-menu li:last-child {
+    border-bottom: none;
+}
+
+.dropdown-menu a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.dropdown-menu a:hover {
+    background-color: var(--bg-hover);
+}
+
+.dropdown-menu a i {
+    width: 20px;
+    color: var(--text-secondary);
+}
+
+.dropdown-menu .logout-link {
+    color: var(--danger-color) !important;
+}
+
+.dropdown-menu .logout-link:hover {
+    background-color: rgba(231, 76, 60, 0.1);
+}
+
+.dropdown-menu .logout-link i {
+    color: var(--danger-color);
+}
+
 /* Financial indicators */
 .positive {
     color: var(--success-color);
@@ -486,6 +872,60 @@ body {
 
 .neutral {
     color: var(--text-secondary);
+}
+
+/* Tab navigation (used on transaction overview and relations) */
+.tab-navigation {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.tab-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.5rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    position: relative;
+    transition: var(--transition);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+}
+
+.tab-button:hover {
+    color: var(--secondary-color);
+    background-color: var(--bg-hover);
+    border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+}
+
+.tab-button.active {
+    color: var(--secondary-color);
+    border-bottom-color: var(--secondary-color);
+}
+
+.tab-badge {
+    display: inline-block;
+    background-color: var(--gray-medium);
+    color: var(--text-secondary);
+    padding: 0.15rem 0.55rem;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    transition: var(--transition);
+}
+
+.tab-button.active .tab-badge {
+    background-color: var(--secondary-color);
+    color: white;
 }
 
 /* Filters and Controls */
@@ -593,6 +1033,27 @@ input[type="checkbox"], input[type="radio"] {
     }
 }
 
+/* Respecteer de systeeminstelling "verminder beweging".
+   Belangrijk voor mensen met evenwichts-/migraineklachten: de app
+   animeert anders bij elke paginalading. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .btn:hover,
+    .card--interactive:hover,
+    .nav-links a:hover,
+    .profile-icon:hover {
+        transform: none;
+    }
+}
+
 /* Print styles */
 @media print {
     .nav-bar,
@@ -613,12 +1074,12 @@ input[type="checkbox"], input[type="radio"] {
 /* Invoice number styling */
 .invoice-number {
     display: inline-block;
-    padding: 0.25rem 0.5rem;
+    padding: 0.15rem 0.4rem;
     background-color: rgba(52, 152, 219, 0.1);
     color: var(--secondary-color);
     border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-size: 0.9rem;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-size: 0.8rem;
     font-weight: 600;
     border: 1px solid rgba(52, 152, 219, 0.3);
 }
@@ -1113,21 +1574,21 @@ input[type="file"].form-control::file-selector-button:hover {
     color: var(--text-inverse);
 }
 
-/* Theme toggle button */
+/* Theme toggle button (staat in het profielmenu, volgt de menu-item stijl) */
 .theme-toggle {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1rem;
+    gap: 10px;
+    padding: 12px 15px;
     color: var(--text-primary);
     text-decoration: none;
-    border-radius: var(--border-radius);
-    transition: var(--transition);
+    transition: background-color 0.2s;
     cursor: pointer;
     background: none;
     border: none;
     width: 100%;
-    font-size: 0.9rem;
+    font-family: inherit;
+    font-size: 0.875rem;
     text-align: left;
 }
 
@@ -1136,7 +1597,7 @@ input[type="file"].form-control::file-selector-button:hover {
 }
 
 .theme-toggle i {
-    font-size: 1rem;
-    width: 1.2rem;
+    width: 20px;
+    color: var(--text-secondary);
     text-align: center;
 }

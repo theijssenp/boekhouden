@@ -286,13 +286,13 @@ include 'header.php';
     .audit-log-table td {
         padding: 0.75rem;
         text-align: left;
-        border-bottom: 1px solid #ddd;
+        border-bottom: 1px solid var(--border-color);
         vertical-align: top;
     }
     .audit-log-table th {
         background-color: var(--bg-table-stripe);
         font-weight: 600;
-        color: #495057;
+        color: var(--text-primary);
     }
     .audit-log-table tr:hover {
         background-color: var(--bg-table-stripe);
@@ -310,8 +310,8 @@ include 'header.php';
         padding: 0.1rem 0.4rem;
         border-radius: 3px;
         font-size: 0.75rem;
-        background-color: #e9ecef;
-        color: #495057;
+        background-color: var(--gray-medium);
+        color: var(--text-primary);
         margin-left: 0.5rem;
     }
     .action-type {
@@ -368,7 +368,7 @@ include 'header.php';
         padding: 1rem;
         margin-bottom: 1.5rem;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border: 1px solid #e9ecef;
+        border: 1px solid var(--border-color);
     }
     .stats-grid {
         display: grid;
@@ -397,7 +397,7 @@ include 'header.php';
         padding: 1rem;
         margin-bottom: 1.5rem;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border: 1px solid #e9ecef;
+        border: 1px solid var(--border-color);
     }
     .filter-form {
         display: flex;

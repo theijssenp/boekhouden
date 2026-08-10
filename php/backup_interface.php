@@ -138,7 +138,7 @@ if (file_exists($backupDir)) {
             margin: 2rem 0;
         }
         .backup-card {
-            background: white;
+            background: var(--bg-card);
             border-radius: 8px;
             padding: 1.5rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -146,10 +146,10 @@ if (file_exists($backupDir)) {
         }
         .backup-card h3 {
             margin-top: 0;
-            color: #2c3e50;
+            color: var(--text-primary);
         }
         .backup-card p {
-            color: #666;
+            color: var(--text-secondary);
             margin-bottom: 1.5rem;
         }
         .btn-backup {
@@ -187,7 +187,7 @@ if (file_exists($backupDir)) {
             justify-content: space-between;
             align-items: center;
             padding: 1rem;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--border-color);
         }
         .backup-item:last-child {
             border-bottom: none;
@@ -197,11 +197,11 @@ if (file_exists($backupDir)) {
         }
         .backup-name {
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--text-primary);
         }
         .backup-meta {
             font-size: 0.875rem;
-            color: #666;
+            color: var(--text-secondary);
             margin-top: 0.25rem;
         }
         .backup-actions-small {
@@ -226,7 +226,7 @@ if (file_exists($backupDir)) {
             text-align: center;
             padding: 3rem;
             color: #7f8c8d;
-            background: #f8f9fa;
+            background: var(--gray-light);
             border-radius: 8px;
         }
         form {
@@ -241,7 +241,7 @@ if (file_exists($backupDir)) {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
                     <defs>
                         <linearGradient id="header-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
+                            <stop offset="0%" style="stop-color: var(--text-primary);stop-opacity:1" />
                             <stop offset="100%" style="stop-color:#3498db;stop-opacity:1" />
                         </linearGradient>
                     </defs>
@@ -389,7 +389,7 @@ if (file_exists($backupDir)) {
         </div>
     </main>
     
-    <footer style="text-align: center; padding: 20px; margin-top: 40px; color: #666; font-size: 12px; border-top: 1px solid #eee;">
+    <footer style="text-align: center; padding: 20px; margin-top: 40px; color: var(--text-secondary); font-size: 12px; border-top: 1px solid var(--border-color);">
         powered by P. Theijssen
     </footer>
 </body>

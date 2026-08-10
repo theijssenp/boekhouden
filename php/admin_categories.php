@@ -142,14 +142,14 @@ $show_nav = true;
         .categories-table td {
             padding: 0.75rem;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--border-color);
         }
         .categories-table th {
-            background-color: #f8f9fa;
+            background-color: var(--gray-light);
             font-weight: 600;
         }
         .categories-table tr:hover {
-            background-color: #f8f9fa;
+            background-color: var(--gray-light);
         }
         .system-badge {
             display: inline-block;
@@ -173,34 +173,14 @@ $show_nav = true;
             margin-bottom: 2rem;
         }
         .form-card {
-            background: white;
+            background: var(--bg-card);
             border-radius: 8px;
             padding: 1.5rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border: 1px solid #e9ecef;
+            border: 1px solid var(--border-color);
         }
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: #495057;
-        }
-        .form-control {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
-            transition: border-color 0.15s ease-in-out;
-        }
-        .form-control:focus {
-            outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-        }
+        /* .form-group / .form-control komen uit css/style.css - niet
+           opnieuw definieren, dat breekt het donkere thema. */
         .checkbox-group {
             display: flex;
             align-items: center;
@@ -288,7 +268,7 @@ $show_nav = true;
         .section-title {
             margin-top: 0;
             margin-bottom: 1rem;
-            color: #2c3e50;
+            color: var(--text-primary);
             font-size: 1.25rem;
         }
         .neutral {
@@ -307,17 +287,17 @@ $show_nav = true;
             border-color: #bee5eb;
         }
         .card {
-            background: white;
+            background: var(--bg-card);
             border-radius: 8px;
             padding: 1.5rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 2rem;
-            border: 1px solid #e9ecef;
+            border: 1px solid var(--border-color);
         }
         .card-title {
             margin-top: 0;
             margin-bottom: 1rem;
-            color: #2c3e50;
+            color: var(--text-primary);
         }
     </style>
 

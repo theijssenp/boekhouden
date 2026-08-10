@@ -89,43 +89,41 @@ try {
 ?>
 
 <div class="container">
-    <h1>Admin Dashboard</h1>
-    
     <div class="welcome-message">
         <p>Welkom, <?php echo htmlspecialchars($_SESSION['full_name'] ?? $_SESSION['username']); ?>! Je bent ingelogd als administrator.</p>
     </div>
-    
+
     <!-- Quick Stats -->
     <div class="dashboard-stats">
         <div class="stat-card">
-            <div class="stat-icon">👥</div>
+            <div class="stat-icon"><i class="fas fa-users" aria-hidden="true"></i></div>
             <div class="stat-content">
                 <h3><?php echo $user_stats['total_users']; ?></h3>
                 <p>Totaal gebruikers</p>
                 <small><?php echo $user_stats['active_users']; ?> actief</small>
             </div>
         </div>
-        
+
         <div class="stat-card">
-            <div class="stat-icon">💰</div>
+            <div class="stat-icon"><i class="fas fa-right-left" aria-hidden="true"></i></div>
             <div class="stat-content">
                 <h3><?php echo $transaction_stats['total_transactions']; ?></h3>
                 <p>Transacties</p>
                 <small><?php echo $transaction_stats['transactions_today']; ?> vandaag</small>
             </div>
         </div>
-        
+
         <div class="stat-card">
-            <div class="stat-icon">📊</div>
+            <div class="stat-icon"><i class="fas fa-chart-line" aria-hidden="true"></i></div>
             <div class="stat-content">
                 <h3>€<?php echo number_format($transaction_stats['total_income'] - $transaction_stats['total_expenses'], 2, ',', '.'); ?></h3>
                 <p>Netto resultaat</p>
                 <small>Ink: €<?php echo number_format($transaction_stats['total_income'], 2, ',', '.'); ?> | Uit: €<?php echo number_format($transaction_stats['total_expenses'], 2, ',', '.'); ?></small>
             </div>
         </div>
-        
+
         <div class="stat-card">
-            <div class="stat-icon">🔒</div>
+            <div class="stat-icon"><i class="fas fa-lock" aria-hidden="true"></i></div>
             <div class="stat-content">
                 <h3><?php echo $system_stats['active_sessions']; ?></h3>
                 <p>Actieve sessies</p>
@@ -379,9 +377,17 @@ function get_activity_icon($action_type) {
 }
 
 .stat-icon {
-    font-size: 40px;
+    font-size: 1.6rem;
     margin-right: 20px;
-    opacity: 0.8;
+    width: 3rem;
+    height: 3rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: rgba(52, 152, 219, 0.12);
+    color: var(--secondary-color);
 }
 
 .stat-content h3 {
@@ -445,7 +451,7 @@ function get_activity_icon($action_type) {
     text-decoration: none;
     color: var(--text-primary);
     transition: all 0.3s;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--border-color);
 }
 
 .action-button:hover {
@@ -618,7 +624,7 @@ function get_activity_icon($action_type) {
     }
 }
 </style>
-<footer style="text-align: center; padding: 20px; margin-top: 40px; color: #666; font-size: 12px; border-top: 1px solid #eee;">
+<footer style="text-align: center; padding: 20px; margin-top: 40px; color: var(--text-secondary); font-size: 12px; border-top: 1px solid var(--border-color);">
     powered by P. Theijssen
 </footer>
 <?php include 'footer.php'; ?>
