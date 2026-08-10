@@ -116,9 +116,9 @@ try {
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-chart-line" aria-hidden="true"></i></div>
             <div class="stat-content">
-                <h3>€<?php echo number_format($transaction_stats['total_income'] - $transaction_stats['total_expenses'], 2, ',', '.'); ?></h3>
+                <h3><?php echo format_euro($transaction_stats['total_income'] - $transaction_stats['total_expenses']); ?></h3>
                 <p>Netto resultaat</p>
-                <small>Ink: €<?php echo number_format($transaction_stats['total_income'], 2, ',', '.'); ?> | Uit: €<?php echo number_format($transaction_stats['total_expenses'], 2, ',', '.'); ?></small>
+                <small>Ink: <?php echo format_euro($transaction_stats['total_income']); ?> | Uit: <?php echo format_euro($transaction_stats['total_expenses']); ?></small>
             </div>
         </div>
 

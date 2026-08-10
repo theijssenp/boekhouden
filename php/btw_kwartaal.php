@@ -906,12 +906,12 @@ include 'page_header.php';
                             <td>Totaal Kwartaal:</td>
                             <td class="negative"><?php echo format_euro($vatSummary['vat_on_income']); ?></td>
                             <td class="positive"><?php echo format_euro($vatSummary['vat_on_expenses']); ?></td>
-                            <td class="neutral">€<?php
+                            <td class="neutral"><?php
                                 $nonDeductibleTotal = 0;
                                 foreach ($monthlySummary as $monthRow) {
                                     $nonDeductibleTotal += $monthRow['vat_expense_nondeductible'] ?? 0;
                                 }
-                                echo format_amount($nonDeductibleTotal);
+                                echo format_euro($nonDeductibleTotal);
                             ?></td>
                             <td class="<?php echo $vatSummary['net_vat'] >= 0 ? 'negative' : 'positive'; ?>">
                                 <strong><?php echo format_euro($vatSummary['net_vat']); ?></strong>
@@ -1099,7 +1099,7 @@ include 'page_header.php';
                                 if (isset($t['vat_amount']) && $t['vat_amount'] != 0) {
                                     echo format_euro($t['vat_amount']);
                                 } else {
-                                    echo '€0,00';
+                                    echo format_euro(0);
                                 }
                                 ?>
                             </td>

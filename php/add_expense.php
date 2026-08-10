@@ -331,14 +331,19 @@ include 'page_header.php';
                     let vatAmount, baseAmount, totalAmount;
                     let calculationText = '';
 
+                    // Nederlandse notatie, gelijk aan format_euro() in PHP
+                    const eur = (v) => '€ ' + v.toLocaleString('nl-NL', {
+                        minimumFractionDigits: 2, maximumFractionDigits: 2
+                    });
+
                     if (vatIncluded) {
                         baseAmount = amount / (1 + (vatRate / 100));
                         vatAmount = amount - baseAmount;
-                        calculationText = `€${amount.toFixed(2)} inclusief ${vatRate}% BTW = €${baseAmount.toFixed(2)} excl. BTW + €${vatAmount.toFixed(2)} BTW`;
+                        calculationText = `${eur(amount)} inclusief ${vatRate}% BTW = ${eur(baseAmount)} excl. BTW + ${eur(vatAmount)} BTW`;
                     } else {
                         vatAmount = amount * (vatRate / 100);
                         totalAmount = amount + vatAmount;
-                        calculationText = `€${amount.toFixed(2)} excl. ${vatRate}% BTW = €${totalAmount.toFixed(2)} incl. BTW (€${amount.toFixed(2)} + €${vatAmount.toFixed(2)} BTW)`;
+                        calculationText = `${eur(amount)} excl. ${vatRate}% BTW = ${eur(totalAmount)} incl. BTW (${eur(amount)} + ${eur(vatAmount)} BTW)`;
                     }
 
                     vatCalculationText.textContent = calculationText;

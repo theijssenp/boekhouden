@@ -511,9 +511,21 @@ textarea:focus-visible,
 
 /* Dichtere variant voor tabellen met veel kolommen (zoals het
    transactieoverzicht met 10 kolommen voor een beheerder). */
+/* Iets kleiner lettertype in plaats van steeds smallere padding: dat
+   schaalt alle kolommen mee en houdt de tabel passend, ook als het
+   lettertype net anders uitvalt dan waarop is afgestemd. */
+.data-table--dense {
+    font-size: 0.9rem;
+}
+
 .data-table--dense th,
 .data-table--dense td {
     padding: 0.6rem 0.45rem;
+}
+
+.data-table--dense .btn-icon {
+    width: 1.8rem;
+    height: 1.8rem;
 }
 
 /* De bonkolom bevat alleen een icoon */

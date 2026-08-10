@@ -227,22 +227,22 @@ include 'page_header.php';
                     
                     <div class="balance-item">
                         <span>Vorderingen</span>
-                        <span class="neutral">€0,00</span>
+                        <span class="neutral"><?php echo format_euro(0); ?></span>
                     </div>
                     
                     <div class="balance-item">
                         <span>Voorraden</span>
-                        <span class="neutral">€0,00</span>
+                        <span class="neutral"><?php echo format_euro(0); ?></span>
                     </div>
                     
                     <div class="balance-item">
                         <span>Vaste activa</span>
-                        <span class="neutral">€0,00</span>
+                        <span class="neutral"><?php echo format_euro(0); ?></span>
                     </div>
                     
                     <div class="balance-item">
                         <span>Overige activa</span>
-                        <span class="neutral">€0,00</span>
+                        <span class="neutral"><?php echo format_euro(0); ?></span>
                     </div>
                     
                     <div class="balance-item total">
@@ -269,17 +269,17 @@ include 'page_header.php';
                     <h4 style="color: var(--danger-color); margin-top: 1rem;">Schulden (Passiva)</h4>
                     <div class="balance-item">
                         <span>Crediteuren</span>
-                        <span class="neutral">€0,00</span>
+                        <span class="neutral"><?php echo format_euro(0); ?></span>
                     </div>
                     
                     <div class="balance-item">
                         <span>Te betalen belastingen</span>
-                        <span class="neutral">€0,00</span>
+                        <span class="neutral"><?php echo format_euro(0); ?></span>
                     </div>
                     
                     <div class="balance-item">
                         <span>Leningen</span>
-                        <span class="neutral">€0,00</span>
+                        <span class="neutral"><?php echo format_euro(0); ?></span>
                     </div>
                     
                     <div class="balance-item">
@@ -295,12 +295,12 @@ include 'page_header.php';
                     <h4 style="color: var(--success-color); margin-top: 1.5rem;">Eigen Vermogen</h4>
                     <div class="balance-item">
                         <span>Ingesteld kapitaal</span>
-                        <span class="neutral">€0,00</span>
+                        <span class="neutral"><?php echo format_euro(0); ?></span>
                     </div>
                     
                     <div class="balance-item">
                         <span>Agioreserve</span>
-                        <span class="neutral">€0,00</span>
+                        <span class="neutral"><?php echo format_euro(0); ?></span>
                     </div>
                     
                     <div class="balance-item">
