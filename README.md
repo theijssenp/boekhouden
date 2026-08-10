@@ -59,11 +59,11 @@ voor de gebruiker waaronder PHP draait.
  - Onderstaande schermafbeeldingen geven een voorbeeld hoe de app werkt.
  - De voorbeelden zijn gebaseerd op Fake data.
 
-![Alt-tekst](transactions.png)
+![Transactieoverzicht met boekjaarfilter, BTW per regel en totalen](png/transactions.png)
 
-![Alt-tekst](png/kostenbaten.png)
+![Winst- en verliesrekening per jaar en kwartaal](png/kostenbaten.png)
 
-![Alt-tekst](png/Balans.png)
+![Balansoverzicht met activa, passiva en eigen vermogen](png/Balans.png)
 
-![Alt-tekst](png/btw.png)
+![BTW-overzicht per kwartaal, uitgesplitst per tarief](png/btw.png)
 
